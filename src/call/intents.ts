@@ -1,5 +1,5 @@
 export enum Intent {
-  INTRESTED,
+  INTERESTED,
   NOT_INTERESTED,
   ASK_MORE_INFO,
   ACCEPTION,

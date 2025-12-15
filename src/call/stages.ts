@@ -3,4 +3,5 @@ export enum CallStage {
   PITCH,
   BOOK_MEETING,
   END,
+  TERMINATE,
 }
