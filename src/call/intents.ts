@@ -1,0 +1,8 @@
+export enum Intent {
+  INTRESTED,
+  NOT_INTERESTED,
+  ASK_MORE_INFO,
+  ACCEPTION,
+  OBJECTION,
+  UNCLEAR,
+}
