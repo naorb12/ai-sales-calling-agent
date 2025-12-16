@@ -1,41 +1,82 @@
 import { ChatPromptTemplate } from "@langchain/core/prompts";
+import { ChatOpenAI } from "@langchain/openai";
 import { z } from "zod";
-import { model } from "../agent/agent.js";
 import { Intent } from "./intents.js";
 import { CallStage } from "./stages.js";
 import { INTENT_DEFINITIONS } from "../agent/prompts.js";
+import { config } from "../config.js";
 
 /**
- * Schema for structured intent classification output (5 simplified intents)
+ * Dedicated model for intent classification with temperature 0 for consistency
+ */
+const classifierModel = new ChatOpenAI({
+  model: "gpt-4o-mini",
+  temperature: 0, // Deterministic for reliable classification
+  apiKey: config.openai.apiKey,
+});
+
+/**
+ * Schema for structured intent classification output (6 intents)
  */
 const IntentSchema = z.object({
-  intent: z.enum(["POSITIVE", "OBJECTION", "ASK_MORE_INFO", "NEGATIVE", "UNCLEAR"]),
+  intent: z.enum(["POSITIVE", "OBJECTION", "ASK_MORE_INFO", "NEGATIVE", "UNCLEAR", "REGRET"]),
   confidence: z.number().min(0).max(1).describe("רמת הביטחון בסיווג (0-1)"),
   reasoning: z.string().describe("הסבר קצר למה סיווגת ככה"),
 });
 
 /**
- * Prompt template for intent classification
+ * Stage-specific context - just what was asked, let LLM figure out the intent
+ */
+function getStageContext(stage: CallStage): string {
+  switch (stage) {
+    case CallStage.INTRO:
+      return "הסוכן שאל אם יש ללקוח דקה/זמן לשמוע על המוצר.";
+
+    case CallStage.PITCH:
+      return "הסוכן הציג את המוצר ושאל אם הלקוח מעוניין לקבוע פגישה.";
+
+    case CallStage.BOOK_MEETING:
+      return "הסוכן מנסה לקבוע זמן פגישה עם הלקוח.";
+
+    case CallStage.END:
+      return "השיחה הסתיימה, הסוכן אמר ביי. אם הלקוח מגיב בפרידה ('תודה', 'ביי', 'אוקיי') = NEGATIVE. רק חרטה מפורשת ('רגע!', 'חכה!') = REGRET.";
+
+    default:
+      return "";
+  }
+}
+
+/**
+ * Simplified prompt - trust the LLM's semantic understanding
  */
 const classifierPrompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `אתה מנתח שיחות מכירה מקצועי. תפקידך לסווג את הכוונה האמיתית של הלקוח.
+    `אתה מנתח שיחות מכירה. תפקידך: **להבין מה הלקוח באמת רוצה** לפי ההקשר.
 
 ${INTENT_DEFINITIONS}
 
-חשוב: נתח את הכוונה האמיתית, לא רק את המילים. קח בחשבון הקשר, טון, והיסטוריה.`,
+**עקרון יסוד**: הבן את הכוונה האמיתית, לא את המילים. השתמש בהבנה סמנטית.`,
   ],
-  ["human", "שלב בשיחה: {stage}"],
-  ["human", "הלקוח אמר: {userSpeech}"],
-  ["human", "היסטוריית השיחה עד כה:\n{history}"],
-  ["human", "מהי הכוונה האמיתית של הלקוח?"],
+  [
+    "human",
+    `שלב: **{stage}**
+הקשר: {stageContext}
+
+שיחה עד כה:
+{history}
+
+---
+הלקוח אמר עכשיו: "{userSpeech}"
+
+מה הכוונה האמיתית של הלקוח?`,
+  ],
 ]);
 
 /**
  * Chain for intent classification with structured output
  */
-const classifierChain = classifierPrompt.pipe(model.withStructuredOutput(IntentSchema));
+const classifierChain = classifierPrompt.pipe(classifierModel.withStructuredOutput(IntentSchema));
 
 /**
  * Classify user intent based on their speech, current stage, and conversation history
@@ -48,6 +89,7 @@ export async function classifyIntent(
   try {
     const result = await classifierChain.invoke({
       stage: CallStage[stage],
+      stageContext: getStageContext(stage),
       userSpeech,
       history: history || "תחילת שיחה",
     });

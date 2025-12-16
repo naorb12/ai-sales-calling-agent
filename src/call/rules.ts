@@ -9,7 +9,9 @@ import { Intent } from "./intents.js";
 export function nextStage(
   currentStage: CallStage,
   intent: Intent,
-  repeatingStage: number
+  repeatingStage: number,
+  previousStage?: CallStage,
+  hasSelectedSlot: boolean = false
 ): CallStage {
   if (currentStage === CallStage.INTRO) {
     return handleIntroStage(intent, repeatingStage);
@@ -19,10 +21,10 @@ export function nextStage(
     return handlePitchStage(intent, repeatingStage);
   }
   if (currentStage === CallStage.BOOK_MEETING) {
-    return handleBookMeetingStage(intent, repeatingStage);
+    return handleBookMeetingStage(intent, repeatingStage, hasSelectedSlot);
   }
   if (currentStage === CallStage.END) {
-    return handleEndStage(intent);
+    return handleEndStage(intent, previousStage);
   }
   return CallStage.END;
 }
@@ -56,9 +58,9 @@ function handlePitchStage(intent: Intent, repeatingStage: number): CallStage {
     return CallStage.BOOK_MEETING;
   }
 
-  // Questions → stay in pitch, answer up to 2 times
+  // Questions → stay in pitch, answer up to 5 times
   if (intent === Intent.ASK_MORE_INFO) {
-    if (repeatingStage < 2) {
+    if (repeatingStage < 5) {
       return CallStage.PITCH;
     }
     return CallStage.END; // Too many questions, they're not convinced
@@ -83,10 +85,14 @@ function handlePitchStage(intent: Intent, repeatingStage: number): CallStage {
 
 function handleBookMeetingStage(
   intent: Intent,
-  repeatingStage: number
+  repeatingStage: number,
+  hasSelectedSlot: boolean = false
 ): CallStage {
   // Positive → meeting booked, end call
   if (intent === Intent.POSITIVE) {
+    if (!hasSelectedSlot) {
+      return CallStage.BOOK_MEETING;
+    }
     return CallStage.END;
   }
 
@@ -115,21 +121,27 @@ function handleBookMeetingStage(
   return CallStage.END;
 }
 
-function handleEndStage(intent: Intent): CallStage {
-  // Any negative signal → terminate
-  if (
-    intent === Intent.NEGATIVE ||
-    intent === Intent.OBJECTION ||
-    intent === Intent.UNCLEAR
-  ) {
-    return CallStage.TERMINATE;
+function handleEndStage(intent: Intent, previousStage?: CallStage): CallStage {
+  // REGRET: Explicit regret at END → go back to previous stage
+  // Examples: "רגע! אני בעצם כן מעוניין", "חכה רגע, ספר לי עוד"
+  if (intent === Intent.ASK_MORE_INFO) {
+      return CallStage.PITCH
   }
 
-  // They have more questions at the end → go back to pitch
-  if (intent === Intent.ASK_MORE_INFO) {
+  if (intent === Intent.REGRET) {
+    // If they were in BOOK_MEETING before, go back there (they want to book!)
+    if (previousStage === CallStage.BOOK_MEETING) {
+      return CallStage.BOOK_MEETING;
+    }
+    // Otherwise, go back to PITCH (they want to hear more)
     return CallStage.PITCH;
   }
 
-  // Otherwise terminate
+  // Everything else at END → terminate
+  // POSITIVE at END = acknowledging goodbye ("מעולה", "תודה") → TERMINATE
+  // NEGATIVE at END = accepting goodbye ("ביי", "אוקיי") → TERMINATE
+  // ASK_MORE_INFO at END = still wants to end → TERMINATE
+  // OBJECTION at END = still wants to end → TERMINATE
+  // UNCLEAR at END = still wants to end → TERMINATE
   return CallStage.TERMINATE;
 }

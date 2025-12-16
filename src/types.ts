@@ -16,10 +16,10 @@ export interface Lead {
  * Conversation turn in the call history
  */
 export interface ConversationTurn {
-  agent: string;
-  user: string;
-  intent?: Intent;
-  timestamp: number;
+  agent: string; // Agent's response
+  user: string; // User's input
+  intent?: Intent; // Classified intent
+  timestamp: number; // Unix timestamp
 }
 
 /**
@@ -39,6 +39,7 @@ export interface CallSession {
   id: string;
   lead: Lead;
   stage: CallStage;
+  previousStage?: CallStage; // Track where we came from for intelligent routing
   repeatCount: number;
   history: ConversationTurn[];
   availableSlots: TimeSlot[]; // Pre-fetched before call

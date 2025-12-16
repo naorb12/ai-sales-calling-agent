@@ -1,7 +1,7 @@
 import * as readline from "readline";
 import { v4 as uuidv4 } from "uuid";
 import { validateConfig } from "./src/config.js";
-import { CallSession, Lead } from "./src/types.js";
+import type { CallSession, Lead } from "./src/types.js";
 import { CallStage } from "./src/call/stages.js";
 import { startConversation, processTurn } from "./src/call/pipeline.js";
 import { getAvailableSlots, bookMeeting, sendCalendarInvite } from "./src/services/calendar-service.js";

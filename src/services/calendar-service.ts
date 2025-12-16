@@ -1,4 +1,4 @@
-import { TimeSlot } from "../types.js";
+import type { TimeSlot } from "../types.js";
 
 /**
  * Calendar service for managing meeting availability and bookings

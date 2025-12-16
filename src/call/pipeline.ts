@@ -32,22 +32,41 @@ export async function processTurn(session: CallSession, userInput: string): Prom
   console.log(`\n📥 User: ${userInput}`);
   const intent = await classifyIntent(userInput, session.stage, historyText);
 
-  // Step 2: Determine next stage using YOUR state machine
-  const previousStage = session.stage;
-  const newStage = nextStage(session.stage, intent, session.repeatCount);
+  // Step 1.5: Extract slot BEFORE transition if in BOOK_MEETING
+  // This ensures we have the latest selection when making stage decisions
+  if (session.stage === CallStage.BOOK_MEETING) {
+    const selectedSlot = await extractSelectedSlot("", userInput, session.availableSlots);
+    if (selectedSlot) {
+      session.selectedSlot = selectedSlot;
+      console.log(`\n✅ Selected slot: ${selectedSlot.displayText}`);
+    }
+  }
 
-  // Update repeat count
-  if (newStage === previousStage) {
+  // Step 2: Determine next stage using YOUR state machine
+  const currentStage = session.stage;
+  const hasSelectedSlot = !!session.selectedSlot;
+  const newStage = nextStage(
+    session.stage,
+    intent,
+    session.repeatCount,
+    session.previousStage,
+    hasSelectedSlot
+  );
+
+  // Update repeat count and track previous stage
+  if (newStage === currentStage) {
     session.repeatCount++;
   } else {
+    // Store the current stage as previous before transitioning
+    session.previousStage = session.stage;
     session.repeatCount = 0;
     session.stage = newStage;
   }
 
-  const stageChanged = newStage !== previousStage;
+  const stageChanged = newStage !== currentStage;
 
   console.log(`\n🔄 Stage Transition:`);
-  console.log(`   From: ${CallStage[previousStage]} → To: ${CallStage[newStage]}`);
+  console.log(`   From: ${CallStage[currentStage]} → To: ${CallStage[newStage]}`);
   console.log(`   Intent: ${Intent[intent]}`);
   console.log(`   Repeat Count: ${session.repeatCount}`);
 
@@ -62,7 +81,13 @@ export async function processTurn(session: CallSession, userInput: string): Prom
       .join("\n");
   }
 
-  // Step 5: Format prompt with variables
+  // Step 5: Build selected slot text for END stage
+  let selectedSlotText = "לא נקבעה פגישה";
+  if (session.selectedSlot) {
+    selectedSlotText = session.selectedSlot.displayText;
+  }
+
+  // Step 6: Format prompt with variables
   const formattedMessages = await promptTemplate.formatMessages({
     leadName: session.lead.name,
     company: session.lead.company,
@@ -70,9 +95,10 @@ export async function processTurn(session: CallSession, userInput: string): Prom
     history: historyText || "תחילת שיחה",
     userInput,
     availableSlots: availableSlotsText || "לא זמין", // For BOOK_MEETING stage
+    selectedSlot: selectedSlotText, // For END stage
   });
 
-  // Step 6: Get agent response
+  // Step 7: Get agent response
   console.log(`\n🤖 Generating agent response for stage: ${CallStage[session.stage]}...`);
 
   try {
@@ -103,15 +129,6 @@ export async function processTurn(session: CallSession, userInput: string): Prom
     }
 
     console.log(`\n💬 Agent: ${agentResponse}`);
-
-    // Step 7: Extract selected time slot if in BOOK_MEETING stage
-    if (session.stage === CallStage.BOOK_MEETING) {
-      const selectedSlot = extractSelectedSlot(agentResponse, userInput, session.availableSlots);
-      if (selectedSlot) {
-        session.selectedSlot = selectedSlot;
-        console.log(`\n✅ Selected slot: ${selectedSlot.displayText}`);
-      }
-    }
 
     // Step 8: Update conversation history
     const turn: ConversationTurn = {
@@ -151,6 +168,8 @@ export async function startConversation(session: CallSession): Promise<string> {
     industry: session.lead.industry || "טכנולוגיה",
     history: "",
     userInput: "[התחלת שיחה - הצג את עצמך]",
+    availableSlots: "לא זמין",
+    selectedSlot: "לא נקבעה פגישה",
   });
 
   try {
