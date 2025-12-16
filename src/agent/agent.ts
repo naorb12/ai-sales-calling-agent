@@ -8,8 +8,9 @@ import { config } from "../config.js";
  * Create the OpenAI model instance
  */
 export const model = new ChatOpenAI({
-  model: "gpt-4.1-mini",
+  model: "gpt-4o-mini",
   temperature: 0.3,
+  
   apiKey: config.openai.apiKey,
 });
 
