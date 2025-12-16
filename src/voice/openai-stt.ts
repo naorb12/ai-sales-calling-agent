@@ -24,12 +24,18 @@ export async function speechToText(audioFilePath: string): Promise<string> {
  */
 export async function speechToTextFromBuffer(
   audioBuffer: Buffer,
-  filename: string = "audio.mp3"
+  filename: string = "audio.wav"
 ): Promise<string> {
   // Convert Buffer to Uint8Array for Blob compatibility
   const uint8Array = new Uint8Array(audioBuffer);
-  const blob = new Blob([uint8Array], { type: "audio/mpeg" });
-  const file = new File([blob], filename, { type: "audio/mpeg" });
+  
+  // Determine MIME type from filename
+  const mimeType = filename.endsWith('.wav') ? 'audio/wav' : 
+                   filename.endsWith('.mp3') ? 'audio/mpeg' :
+                   filename.endsWith('.m4a') ? 'audio/m4a' : 'audio/wav';
+  
+  const blob = new Blob([uint8Array], { type: mimeType });
+  const file = new File([blob], filename, { type: mimeType });
 
   const transcription = await openai.audio.transcriptions.create({
     file: file,

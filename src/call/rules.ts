@@ -13,6 +13,11 @@ export function nextStage(
   previousStage?: CallStage,
   hasSelectedSlot: boolean = false
 ): CallStage {
+  // TERMINATE is a final state - no transitions out
+  if (currentStage === CallStage.TERMINATE) {
+    return CallStage.TERMINATE;
+  }
+
   if (currentStage === CallStage.INTRO) {
     return handleIntroStage(intent, repeatingStage);
   }
