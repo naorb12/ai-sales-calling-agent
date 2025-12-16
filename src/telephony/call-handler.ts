@@ -123,6 +123,15 @@ async function processUserSpeech(call: ActiveCall) {
     // End if TERMINATE
     if (result.nextStage === CallStage.TERMINATE) {
       console.log("🔚 Call ending - no more processing");
+      // Wait for final message to play, then hang up
+      setTimeout(() => {
+        try {
+          call.ws.close();
+          console.log("📞 Call terminated");
+        } catch (error) {
+          console.error("Error closing call:", error);
+        }
+      }, 3000); // Give 3 seconds for final message to play
     }
   } catch (error) {
     console.error("❌ Error processing audio:", error);
