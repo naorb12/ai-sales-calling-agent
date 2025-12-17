@@ -34,12 +34,14 @@ function numberToHebrewWord(num: number): string {
   ];
 
   if (num === 0) return "אפס";
-  if (num < 10) return ones[num];
-  if (num >= 10 && num < 20) return teens[num - 10];
+  if (num < 10) return ones[num] ?? num.toString();
+  if (num >= 10 && num < 20) return teens[num - 10] ?? num.toString();
   if (num >= 20 && num < 60) {
     const tensDigit = Math.floor(num / 10);
     const onesDigit = num % 10;
-    return onesDigit === 0 ? tens[tensDigit] : `${tens[tensDigit]} ו${ones[onesDigit]}`;
+    const tensWord = tens[tensDigit] ?? "";
+    const onesWord = ones[onesDigit] ?? "";
+    return onesDigit === 0 ? tensWord : `${tensWord} ו${onesWord}`;
   }
   return num.toString(); // Fallback for larger numbers
 }

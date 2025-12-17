@@ -55,8 +55,8 @@ export async function getAvailableSlots(
     for (const time of hours) {
       if (slots.length >= slotsCount) break;
       
-      const dateStr = date.toISOString().split("T")[0];
-      const dayName = dayNames[dayOfWeek];
+      const dateStr = date.toISOString().split("T")[0] ?? date.toISOString();
+      const dayName = dayNames[dayOfWeek] ?? "יום";
       
       // Format display text
       let displayText = "";
@@ -137,7 +137,7 @@ function generateMeetingCode(): string {
   const segmentLength = 4;
   
   return Array.from({ length: segments }, () =>
-    Array.from({ length: segmentLength }, () => chars[Math.floor(Math.random() * chars.length)]).join("")
+    Array.from({ length: segmentLength }, () => chars[Math.floor(Math.random() * chars.length)] ?? "a").join("")
   ).join("-");
 }
 
