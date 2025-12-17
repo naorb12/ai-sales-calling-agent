@@ -7,7 +7,7 @@ import { config } from "../config.js";
 /**
  * Create the OpenAI model instance
  */
-export const model = new ChatOpenAI({
+const model = new ChatOpenAI({
   model: "gpt-4o-mini",
   temperature: 0.3,
   

@@ -15,16 +15,5 @@ export const config = {
   },
 } as const;
 
-// Validate required config for current phase
-export function validateConfig(phase: "text" | "audio" | "telephony") {
-  if (!config.openai.apiKey) {
-    throw new Error("OPENAI_API_KEY is required");
-  }
 
-  if (phase === "telephony") {
-    if (!config.twilio.accountSid || !config.twilio.authToken) {
-      throw new Error("Twilio credentials are required for telephony phase");
-    }
-  }
-}
 

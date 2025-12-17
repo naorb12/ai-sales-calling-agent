@@ -4,20 +4,6 @@ import * as fs from "fs";
 
 const openai = new OpenAI({ apiKey: config.openai.apiKey });
 
-/**
- * Convert Hebrew speech to text using OpenAI Whisper
- */
-export async function speechToText(audioFilePath: string): Promise<string> {
-  const audioFile = fs.createReadStream(audioFilePath);
-
-  const transcription = await openai.audio.transcriptions.create({
-    file: audioFile,
-    model: "whisper-1",
-    language: "he", // Hebrew
-  });
-
-  return transcription.text;
-}
 
 /**
  * Convert audio buffer to text (for streaming use cases like Twilio)

@@ -26,11 +26,4 @@ export async function makeOutboundCall(
   return call.sid;
 }
 
-/**
- * Hang up an active call
- */
-export async function hangupCall(callSid: string): Promise<void> {
-  await client.calls(callSid).update({ status: "completed" });
-  console.log(`📴 Call ended: ${callSid}`);
-}
 
