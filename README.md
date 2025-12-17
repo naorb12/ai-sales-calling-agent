@@ -241,7 +241,6 @@ You: "תודה"
 
 ### Tips for Testing:
 - ✅ Speak clearly in Hebrew
-- ✅ Wait ~3 seconds for agent to respond (intentional buffering)
 - ✅ Say short, natural sentences
 - ✅ Check terminal logs for real-time processing
 
@@ -377,18 +376,13 @@ src/
 ### 1. **Pre-fetched Calendar Slots**
 - Slots are fetched **before the call** to avoid 2-3s latency during conversation
 - Trade-off: Less real-time accuracy, but much faster conversation
-
-### 2. **Batch STT (Not Streaming)**
-- Collects 3 seconds of audio before transcribing
-- Better accuracy and simpler implementation
-- Acceptable latency for turn-based sales conversations
-
-### 3. **Hebrew Number Conversion**
+- 
+### 2. **Hebrew Number Conversion**
 - OpenAI TTS struggles with "14:00" → Converts to "שתיים"
 - Dates: "18/12" → "שמונה עשרה לשתיים עשרה"
 - Much more natural pronunciation
 
-### 4. **Semantic Intent Classification**
+### 3. **Semantic Intent Classification**
 - Uses LLM to understand intent based on **context**, not keywords
 - Same word ("אוקיי") = different intents based on conversation stage
 
@@ -405,25 +399,6 @@ src/
 | `SERVER_URL` | ✅ | Public ngrok URL | `https://xxx.ngrok.io` |
 | `FFMPEG_PATH` | ⚠️ | Path to ffmpeg binary | `C:/ffmpeg/bin/ffmpeg.exe` |
 | `TEST_PHONE` | ⚠️ | Phone for test script | `+972501234567` |
-
----
-
-## 🚀 Deployment (Optional)
-
-For production deployment, consider:
-- **Railway** / **Render** / **Heroku**: Easy Node.js hosting
-- **Docker**: Use included `Dockerfile` (if created)
-- **Environment**: Set all env vars in hosting platform
-- **ffmpeg**: Ensure it's available in production (included in Docker image)
-
----
-
-## 📹 Demo Video Script
-
-1. **Show architecture** (folder structure)
-2. **Explain key files** (state machine, intent classification)
-3. **Live call demo** (make actual call, show logs)
-4. **Highlight features** (Hebrew numbers, echo prevention, smart objection handling)
 
 ---
 
@@ -445,5 +420,3 @@ MIT
 ## 👨‍💻 Author
 
 Created as a home assignment for Alta AI Engineer position.
-
-**Key Achievement:** Built a production-ready Hebrew AI calling agent in 48 hours with natural conversation flow, semantic intent understanding, and optimized speech processing.
