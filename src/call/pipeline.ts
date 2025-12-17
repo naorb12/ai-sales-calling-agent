@@ -70,6 +70,17 @@ export async function processTurn(session: CallSession, userInput: string): Prom
   console.log(`   Intent: ${Intent[intent]}`);
   console.log(`   Repeat Count: ${session.repeatCount}`);
 
+
+  if (newStage === CallStage.TERMINATE) {
+    console.log(`\n🔚 Call ending - no agent response needed`);
+    return {
+      agentResponse: "", // Empty response
+      intent,
+      nextStage: newStage,
+      stageChanged,
+    };
+  }
+  
   // Step 3: Get stage-specific prompt template
   const promptTemplate = STAGE_PROMPTS[session.stage];
 

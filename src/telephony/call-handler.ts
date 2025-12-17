@@ -115,24 +115,22 @@ async function processUserSpeech(call: ActiveCall) {
     // Pipeline: Process with agent (keep isSpeaking=true during LLM generation)
     const result = await processTurn(call.session, userText);
     console.log(`💬 Agent: ${result.agentResponse}`);
+    
+    // Check if TERMINATE first - end immediately without audio
+    if (result.nextStage === CallStage.TERMINATE) {
+      console.log("🔚 Call ending - closing connection");
+      try {
+        call.ws.close();
+        console.log("📞 Call terminated");
+      } catch (error) {
+        console.error("Error closing call:", error);
+      }
+      return; // Exit early
+    }
 
     // TTS: Text → Audio → Send to Twilio
     // sendAudio will handle timing and reset isSpeaking when done
     await sendAudio(call, result.agentResponse);
-
-    // End if TERMINATE
-    if (result.nextStage === CallStage.TERMINATE) {
-      console.log("🔚 Call ending - no more processing");
-      // Wait for final message to play, then hang up
-      setTimeout(() => {
-        try {
-          call.ws.close();
-          console.log("📞 Call terminated");
-        } catch (error) {
-          console.error("Error closing call:", error);
-        }
-      }, 3000); // Give 3 seconds for final message to play
-    }
   } catch (error) {
     console.error("❌ Error processing audio:", error);
     call.isSpeaking = false; // Reset on error
