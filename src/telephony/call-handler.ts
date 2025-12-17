@@ -114,7 +114,6 @@ async function processUserSpeech(call: ActiveCall) {
 
     // Pipeline: Process with agent (keep isSpeaking=true during LLM generation)
     const result = await processTurn(call.session, userText);
-    console.log(`💬 Agent: ${result.agentResponse}`);
     
     // Check if TERMINATE first - end immediately without audio
     if (result.nextStage === CallStage.TERMINATE) {

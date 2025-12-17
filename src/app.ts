@@ -90,7 +90,7 @@ export function startServer() {
   wss.on("connection", (ws, req) => {
     console.log("🔌 WebSocket connected");
 
-    // For now, use first stored lead (TODO: match by callSid from message)
+    // Get lead from stored map (first entry for single concurrent call)
     const lead = Array.from(callLeads.values())[0] || {
       name: "Test Lead",
       phone: "+972501234567",

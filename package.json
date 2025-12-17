@@ -9,10 +9,6 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "test:conversation": "tsx test-conversation.ts",
-    "test:audio": "tsx test-conversation-audio.ts",
-    "test:voices": "tsx test-voices.ts",
-    "test:stt": "tsx test-stt.ts",
     "test:call": "tsx test-trigger-call.ts"
   },
   "keywords": [],
