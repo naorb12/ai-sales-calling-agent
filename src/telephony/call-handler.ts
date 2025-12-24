@@ -57,7 +57,6 @@ export async function handleCallConnection(ws: WebSocket, lead: Lead) {
 async function sendInitialGreeting(ws: WebSocket, call: ActiveCall) {
   call.isSpeaking = true; // Prevent audio collection during greeting
   const greeting = await startConversation(call.session); // ← Pipeline
-  console.log(`💬 Agent: ${greeting}`);
   await sendAudio(call, greeting);
   // sendAudio will reset isSpeaking after audio finishes
 }
@@ -71,11 +70,17 @@ async function collectAudio(call: ActiveCall, base64Audio: string) {
     return;
   }
 
+  // Only log when starting to collect (first chunk)
+  if (call.audioBuffer.length === 0) {
+    console.log("🎤 Starting to collect audio...");
+  }
+
   call.audioBuffer.push(Buffer.from(base64Audio, "base64"));
 
   // Wait for ~3 seconds of audio
   const totalBytes = call.audioBuffer.reduce((sum, buf) => sum + buf.length, 0);
   if (totalBytes > 24000) {
+    console.log(`✅ Collected ${totalBytes} bytes of audio, processing...`);
     await processUserSpeech(call);
   }
 }
@@ -97,13 +102,19 @@ async function processUserSpeech(call: ActiveCall) {
 
   try {
     console.log(`🎤 Processing ${audioData.length} bytes of μ-law audio...`);
+    const startTime = Date.now();
 
     // Convert μ-law to WAV for Whisper
+    const time1 = Date.now();
     const wavAudio = await mulawToWav(audioData);
-    console.log(`🔄 Converted to ${wavAudio.length} bytes WAV`);
+    const time2 = Date.now();
+    console.log(`🔄 Converted to ${wavAudio.length} bytes WAV in ${time2 - time1}ms`);
 
     // STT: Audio → Text
+    const time3 = Date.now();
     const userText = await speechToTextFromBuffer(wavAudio, "audio.wav");
+    const time4 = Date.now();
+    console.log(`🔄 Transcribed text in ${time4 - time3}ms`);
     if (!userText?.trim()) {
       console.log("⚠️  No speech detected");
       call.isSpeaking = false; // Reset flag
@@ -113,7 +124,10 @@ async function processUserSpeech(call: ActiveCall) {
     console.log(`📝 User: ${userText}`);
 
     // Pipeline: Process with agent (keep isSpeaking=true during LLM generation)
+    const time5 = Date.now();
     const result = await processTurn(call.session, userText);
+    const time6 = Date.now();
+    console.log(`🔄 Generated agent text response in ${time6 - time5}ms`);
     
     // Check if TERMINATE first - end immediately without audio
     if (result.nextStage === CallStage.TERMINATE) {
@@ -130,6 +144,9 @@ async function processUserSpeech(call: ActiveCall) {
     // TTS: Text → Audio → Send to Twilio
     // sendAudio will handle timing and reset isSpeaking when done
     await sendAudio(call, result.agentResponse);
+    
+    const totalTime = Date.now() - startTime;
+    console.log(`⏱️  TOTAL TURN TIME: ${totalTime}ms`);
   } catch (error) {
     console.error("❌ Error processing audio:", error);
     call.isSpeaking = false; // Reset on error
@@ -145,15 +162,20 @@ async function sendAudio(call: ActiveCall, text: string) {
     call.audioBuffer = []; // Clear any buffered audio
 
     // Generate MP3 audio
+    const time1 = Date.now();
     const mp3Audio = await textToSpeech(text);
-    console.log(`🔊 Generated ${mp3Audio.length} bytes (MP3)`);
+    const time2 = Date.now();
+    console.log(`🔊 Generated ${mp3Audio.length} bytes (MP3) in ${time2 - time1}ms`);
 
     // Convert MP3 to μ-law for Twilio
+    const time3 = Date.now();
     const mulawAudio = await mp3ToMulaw(mp3Audio);
-    console.log(`🔄 Converted to ${mulawAudio.length} bytes μ-law`);
+    const time4 = Date.now();
+    console.log(`🔄 Converted to ${mulawAudio.length} bytes μ-law in ${time4 - time3}ms`);
 
     // Send to Twilio in chunks (160 bytes = 20ms at 8kHz)
     const chunkSize = 160;
+    const time5 = Date.now();
     for (let i = 0; i < mulawAudio.length; i += chunkSize) {
       const chunk = mulawAudio.slice(i, i + chunkSize);
       const payload = chunk.toString("base64");
@@ -168,11 +190,14 @@ async function sendAudio(call: ActiveCall, text: string) {
         })
       );
     }
+    const time6 = Date.now();
+    console.log(`🔄 Sent chunks to Twilio in ${time6 - time5}ms`);
 
     console.log(`✅ Sent audio to caller (${Math.ceil(mulawAudio.length / chunkSize)} chunks)`);
 
     // Wait for audio to finish playing, then allow listening again
     const durationMs = (mulawAudio.length / 8000) * 1000; // 8kHz sample rate
+    console.log(`🔄 Audio duration: ${durationMs}ms`);
     setTimeout(() => {
       call.isSpeaking = false;
       console.log("🎧 Listening for user response...");

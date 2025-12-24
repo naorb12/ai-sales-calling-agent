@@ -30,12 +30,20 @@ export async function processTurn(session: CallSession, userInput: string): Prom
 
   // Step 1: Classify user intent using LLM
   console.log(`\n📥 User: ${userInput}`);
+  const intentTime1 = Date.now();
   const intent = await classifyIntent(userInput, session.stage, historyText);
+  const intentTime2 = Date.now();
+  console.log(`⏱️  Intent classification took: ${intentTime2 - intentTime1}ms`);
 
   // Step 1.5: Extract slot BEFORE transition if in BOOK_MEETING
   // This ensures we have the latest selection when making stage decisions
+  let slotTime1: number | null = null;
+  let slotTime2: number | null = null;
   if (session.stage === CallStage.BOOK_MEETING) {
+    slotTime1 = Date.now();
     const selectedSlot = await extractSelectedSlot("", userInput, session.availableSlots);
+    slotTime2 = Date.now();
+    console.log(`⏱️  Slot extraction took: ${slotTime2 - slotTime1}ms`);
     if (selectedSlot) {
       session.selectedSlot = selectedSlot;
       console.log(`\n✅ Selected slot: ${selectedSlot.displayText}`);
@@ -111,6 +119,7 @@ export async function processTurn(session: CallSession, userInput: string): Prom
 
   // Step 7: Get agent response
   console.log(`\n🤖 Generating agent response for stage: ${CallStage[session.stage]}...`);
+  const agentTime1 = Date.now();
 
   try {
     const result = await agent.invoke(
@@ -121,6 +130,8 @@ export async function processTurn(session: CallSession, userInput: string): Prom
         configurable: { thread_id: session.id },
       }
     );
+    const agentTime2 = Date.now();
+    console.log(`⏱️  Agent response generation took: ${agentTime2 - agentTime1}ms`);
 
     // Extract response text from the agent result
     let agentResponse = "";
@@ -149,6 +160,19 @@ export async function processTurn(session: CallSession, userInput: string): Prom
       timestamp: Date.now(),
     };
     session.history.push(turn);
+
+    // Log pipeline timing summary
+    const totalPipelineTime = agentTime2 - intentTime1;
+    const intentTime = intentTime2 - intentTime1;
+    const slotTime = slotTime1 !== null && slotTime2 !== null ? (slotTime2 - slotTime1) : 0;
+    const agentTime = agentTime2 - agentTime1;
+    console.log(`\n⏱️  Pipeline Timing Summary:`);
+    console.log(`   ├─ Intent Classification: ${intentTime}ms`);
+    if (slotTime > 0) {
+      console.log(`   ├─ Slot Extraction: ${slotTime}ms`);
+    }
+    console.log(`   ├─ Agent Response: ${agentTime}ms`);
+    console.log(`   └─ Total Pipeline: ${totalPipelineTime}ms`);
 
     return {
       agentResponse,
@@ -184,6 +208,7 @@ export async function startConversation(session: CallSession): Promise<string> {
   });
 
   try {
+    const introTime1 = Date.now();
     const result = await agent.invoke(
       {
         messages: formattedMessages,
@@ -192,6 +217,8 @@ export async function startConversation(session: CallSession): Promise<string> {
         configurable: { thread_id: session.id },
       }
     );
+    const introTime2 = Date.now();
+    console.log(`⏱️  Intro generation took: ${introTime2 - introTime1}ms`);
 
     const messages = result.messages;
     const lastMessage = messages[messages.length - 1];
