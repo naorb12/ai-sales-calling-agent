@@ -72,3 +72,38 @@ export interface CallResult {
   meetingBooked?: MeetingData;
 }
 
+/**
+ * Web voice session (reuses CallSession structure)
+ * For web-based voice conversations without telephony
+ */
+export interface WebVoiceSession extends Omit<CallSession, "lead"> {
+  // Lead is optional for web sessions, can be provided via UI
+  lead?: Lead;
+}
+
+/**
+ * Server events sent to web voice clients via WebSocket
+ */
+export type ServerEvent =
+  | {
+      type: "stt_output";
+      transcript: string;
+      ts: number;
+    }
+  | {
+      type: "agent_chunk";
+      text: string;
+      ts: number;
+    }
+  | {
+      type: "tts_chunk";
+      audio: string; // base64-encoded PCM audio
+      ts: number;
+    }
+  | {
+      type: "session_end";
+    }
+  | {
+      type: "pong"; // Response to ping
+    };
+
