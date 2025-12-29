@@ -2,6 +2,7 @@ import express from "express";
 import { WebSocketServer } from "ws";
 import { makeOutboundCall } from "./telephony/twilio-service.js";
 import { handleCallConnection } from "./telephony/call-handler.js";
+import { handleWebVoiceConnection } from "./voice/web-voice-handler.js";
 import type { Lead } from "./types.js";
 
 const app = express();
@@ -9,6 +10,11 @@ const port = 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
 // Store serverUrl by CallSid for TwiML endpoint
 const callUrls = new Map<string, string>();
@@ -85,7 +91,7 @@ export function startServer() {
   });
 
   // WebSocket server for Twilio media streams
-  const wss = new WebSocketServer({ server, path: "/media-stream" });
+  const wss = new WebSocketServer({ noServer: true });
 
   wss.on("connection", (ws, req) => {
     console.log("🔌 WebSocket connected");
@@ -101,5 +107,37 @@ export function startServer() {
     handleCallConnection(ws, lead);
   });
 
-  console.log("📞 Twilio ready!\n");
+  // WebSocket server for web voice sessions
+  const webVoiceWss = new WebSocketServer({ noServer: true });
+
+  webVoiceWss.on("connection", (ws, req) => {
+    console.log("🌐 Web voice WebSocket connected");
+    console.log("   Request URL:", req.url);
+    handleWebVoiceConnection(ws);
+  });
+
+  webVoiceWss.on("error", (error) => {
+    console.error("❌ WebSocket server error:", error);
+  });
+
+  // Handle HTTP upgrade requests
+  server.on("upgrade", (request, socket, head) => {
+    const pathname = new URL(request.url || "", `http://${request.headers.host}`).pathname;
+
+    if (pathname === "/media-stream") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+      });
+    } else if (pathname === "/ws") {
+      console.log("📋 WebSocket upgrade request for /ws");
+      webVoiceWss.handleUpgrade(request, socket, head, (ws) => {
+        webVoiceWss.emit("connection", ws, request);
+      });
+    } else {
+      socket.destroy();
+    }
+  });
+
+  console.log("📞 Twilio ready!");
+  console.log("🌐 Web voice ready!\n");
 }

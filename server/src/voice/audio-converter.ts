@@ -57,3 +57,72 @@ export async function mp3ToMulaw(mp3Buffer: Buffer): Promise<Buffer> {
       .pipe(outputStream, { end: true });
   });
 }
+
+/**
+ * Convert PCM audio (from web client) to WAV (for Whisper)
+ * Creates WAV file manually - no ffmpeg needed!
+ * @param buffer - Raw PCM audio buffer (16-bit, mono)
+ * @param sampleRate - Sample rate of input PCM (typically 16000)
+ */
+export async function pcmToWav(buffer: Buffer, sampleRate: number): Promise<Buffer> {
+  const numChannels = 1; // mono
+  const bitsPerSample = 16;
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const dataSize = buffer.length;
+  const fileSize = 36 + dataSize;
+
+  // Create WAV header
+  const header = Buffer.alloc(44);
+  
+  // RIFF header
+  header.write("RIFF", 0);
+  header.writeUInt32LE(fileSize, 4);
+  header.write("WAVE", 8);
+  
+  // fmt chunk
+  header.write("fmt ", 12);
+  header.writeUInt32LE(16, 16); // fmt chunk size
+  header.writeUInt16LE(1, 20); // audio format (1 = PCM)
+  header.writeUInt16LE(numChannels, 22);
+  header.writeUInt32LE(sampleRate, 24);
+  header.writeUInt32LE(byteRate, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(bitsPerSample, 34);
+  
+  // data chunk
+  header.write("data", 36);
+  header.writeUInt32LE(dataSize, 40);
+
+  // Combine header + PCM data
+  return Buffer.concat([header, buffer]);
+}
+
+/**
+ * Convert MP3 (from OpenAI TTS) to PCM (for web playback)
+ * @param mp3Buffer - MP3 audio buffer from OpenAI
+ * @param targetSampleRate - Target sample rate (typically 16000)
+ * @returns Raw PCM audio buffer (16-bit, mono)
+ */
+export async function mp3ToPcm(mp3Buffer: Buffer, targetSampleRate: number): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    const inputStream = Readable.from(mp3Buffer);
+    const outputStream = new Writable({
+      write(chunk, encoding, callback) {
+        chunks.push(chunk);
+        callback();
+      },
+    });
+
+    ffmpeg(inputStream)
+      .inputFormat("mp3")
+      .toFormat("s16le") // 16-bit little-endian PCM
+      .audioCodec("pcm_s16le")
+      .audioChannels(1) // mono
+      .audioFrequency(targetSampleRate)
+      .on("error", (err) => reject(new Error(`MP3→PCM failed: ${err.message}`)))
+      .on("end", () => resolve(Buffer.concat(chunks)))
+      .pipe(outputStream, { end: true });
+  });
+}
