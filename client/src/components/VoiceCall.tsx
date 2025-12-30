@@ -104,7 +104,7 @@ export default function VoiceCall() {
       )}
 
       {transcript && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 20, color: "black" }}>
           <h3>You said:</h3>
           <div
             style={{
@@ -120,7 +120,7 @@ export default function VoiceCall() {
       )}
 
       {agentResponse && (
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 20, color: "black" }}>
           <h3>Agent:</h3>
           <div
             style={{

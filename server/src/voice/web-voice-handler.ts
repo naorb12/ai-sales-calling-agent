@@ -2,24 +2,24 @@ import type { WebSocket } from "ws";
 import type { CallSession, Lead } from "../types.js";
 import { CallStage } from "../call/stages.js";
 import { startConversation, processTurn } from "../call/pipeline.js";
-import { speechToTextFromBuffer } from "../voice/openai-stt.js";
 import { textToSpeech } from "../voice/openai-tts.js";
 import { getAvailableSlots, bookMeeting, sendCalendarInvite } from "../services/calendar-service.js";
-import { pcmToWav } from "../voice/audio-converter.js";
+import {
+  createStreamingSession,
+  streamAudio,
+  closeStreamingSession,
+  type StreamingSession,
+} from "../voice/assemblyai-stt.js";
 
 interface ActiveSession {
   session: CallSession;
-  audioBuffer: Buffer[];
   ws: WebSocket;
   isSpeaking: boolean; // Flag to prevent echo (agent speaking)
+  transcriptionSession: StreamingSession | null;
+
 }
 
-// PCM audio format: 16kHz, 16-bit, mono
 const PCM_SAMPLE_RATE = 16000;
-const BYTES_PER_SAMPLE = 2; // 16-bit = 2 bytes
-const SAMPLES_PER_SECOND = PCM_SAMPLE_RATE;
-const BYTES_PER_SECOND = SAMPLES_PER_SECOND * BYTES_PER_SAMPLE;
-const MIN_AUDIO_BYTES = BYTES_PER_SECOND * 2; // ~2 seconds of audio
 
 /**
  * Send JSON event to client
@@ -66,22 +66,30 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
 
   const activeSession: ActiveSession = {
     session,
-    audioBuffer: [],
     ws,
     isSpeaking: true, // Start with true to prevent audio collection during greeting
+    transcriptionSession: null,
   };
 
-  // Set up message handler first, but isSpeaking will block audio collection
+  // Create AssemblyAI session once - it stays alive for entire conversation
+  activeSession.transcriptionSession = await createStreamingSession(
+    PCM_SAMPLE_RATE,
+    async (transcript) => {
+      await processUserSpeech(activeSession, transcript);
+    },
+    (error) => {
+      console.error("Transcription error:", error);
+      activeSession.isSpeaking = false;
+    }
+  );
+
   ws.on("message", async (data: Buffer) => {
-    // Check if it's binary (PCM audio) or JSON (control message)
     if (data[0] === 0x7b) {
-      // Starts with '{' - likely JSON
       try {
         const msg = JSON.parse(data.toString());
         if (msg.type === "ping") {
           sendEvent(ws, { type: "pong" });
         } else if (msg.type === "playback_finished") {
-          // Client finished playing audio, can start listening
           activeSession.isSpeaking = false;
           console.log("🎧 Audio playback finished - listening for user response...");
         }
@@ -91,8 +99,10 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
       return;
     }
 
-    // Binary PCM audio chunk
-    await collectAudio(activeSession, data);
+    // Stream PCM audio directly to AssemblyAI (no buffering needed)
+    if (!activeSession.isSpeaking && activeSession.transcriptionSession) {
+      streamAudio(activeSession.transcriptionSession, data);
+    }
   });
 
   // Send initial greeting - this will set isSpeaking appropriately
@@ -121,65 +131,31 @@ async function sendInitialGreeting(session: ActiveSession) {
 }
 
 /**
- * Collect audio chunks until we have enough, then process
- */
-async function collectAudio(session: ActiveSession, pcmChunk: Buffer) {
-  // Don't collect audio while agent is speaking (prevent echo)
-  if (session.isSpeaking) {
-    return;
-  }
-
-  session.audioBuffer.push(pcmChunk);
-
-  // Wait for ~2 seconds of audio
-  const totalBytes = session.audioBuffer.reduce((sum, buf) => sum + buf.length, 0);
-  if (totalBytes >= MIN_AUDIO_BYTES) {
-    await processUserSpeech(session);
-  }
-}
-
-/**
  * Core loop: STT → Pipeline → TTS
  */
-async function processUserSpeech(session: ActiveSession) {
-  // Don't process if already terminated or currently processing
+async function processUserSpeech(session: ActiveSession, userText: string) {
   if (session.session.stage === CallStage.TERMINATE || session.isSpeaking) {
     return;
   }
 
-  // Mark as processing to prevent overlapping turns
   session.isSpeaking = true;
 
-  const audioData = Buffer.concat(session.audioBuffer);
-  session.audioBuffer = [];
+  if (!userText?.trim()) {
+    session.isSpeaking = false;
+    return;
+  }
 
   try {
-    console.log(`🎤 Processing ${audioData.length} bytes of PCM audio...`);
-
-    // Convert PCM to WAV for Whisper
-    const wavAudio = await pcmToWav(audioData, PCM_SAMPLE_RATE);
-    console.log(`🔄 Converted to ${wavAudio.length} bytes WAV`);
-
-    // STT: Audio → Text
-    // Send stt_chunk events (we don't have streaming STT, so we'll send the final result)
-    const userText = await speechToTextFromBuffer(wavAudio, "audio.wav");
-    if (!userText?.trim()) {
-      console.log("⚠️  No speech detected");
-      session.isSpeaking = false; // Reset flag
-      return;
-    }
-
     console.log(`📝 User: ${userText}`);
+
     sendEvent(session.ws, {
       type: "stt_output",
       transcript: userText,
       ts: Date.now(),
     });
 
-    // Pipeline: Process with agent (keep isSpeaking=true during LLM generation)
     const result = await processTurn(session.session, userText);
 
-    // Send agent_chunk events (we don't have streaming, so send full response)
     if (result.agentResponse) {
       sendEvent(session.ws, {
         type: "agent_chunk",
@@ -188,30 +164,22 @@ async function processUserSpeech(session: ActiveSession) {
       });
     }
 
-    // Check if TERMINATE first - end immediately without audio
     if (result.nextStage === CallStage.TERMINATE) {
-      console.log("🔚 Session ending - closing connection");
+      console.log("🔚 Session ending");
       sendEvent(session.ws, { type: "session_end" });
-      try {
-        session.ws.close();
-        console.log("📞 Session terminated");
-      } catch (error) {
-        console.error("Error closing session:", error);
-      }
-      finishSession(session);
-      return; // Exit early
+      session.ws.close();
+      await finishSession(session);
+      return;
     }
 
-    // TTS: Text → Audio → Send to client
-    // sendAudio will handle timing and reset isSpeaking when done
     if (result.agentResponse) {
       await sendAudio(session, result.agentResponse);
     } else {
       session.isSpeaking = false;
     }
   } catch (error) {
-    console.error("❌ Error processing audio:", error);
-    session.isSpeaking = false; // Reset on error
+    console.error("❌ Error processing speech:", error);
+    session.isSpeaking = false;
   }
 }
 
@@ -221,7 +189,6 @@ async function processUserSpeech(session: ActiveSession) {
 async function sendAudio(session: ActiveSession, text: string) {
   try {
     // isSpeaking is already true from processUserSpeech
-    session.audioBuffer = []; // Clear any buffered audio
 
     // Generate MP3 audio
     const mp3Audio = await textToSpeech(text);
@@ -256,6 +223,10 @@ async function finishSession(session: ActiveSession) {
   console.log(`Duration: ${Math.round((Date.now() - session.session.startTime) / 1000)}s`);
   console.log(`Stage: ${CallStage[session.session.stage]}`);
 
+  if (session.transcriptionSession) {
+    await closeStreamingSession(session.transcriptionSession);
+  }
+  
   if (session.session.selectedSlot) {
     console.log(`📅 Booking: ${session.session.selectedSlot.displayText}`);
     const booking = await bookMeeting(session.session.selectedSlot, [session.session.lead.phone]);
