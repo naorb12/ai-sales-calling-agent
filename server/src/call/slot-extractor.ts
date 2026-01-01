@@ -8,9 +8,9 @@ import { config } from "../config.js";
  * Schema for slot selection response
  */
 const SlotSelectionSchema = z.object({
-  selectedIndex: z.number().min(-1).describe("אינדקס של הזמן שנבחר (0-based), או -1 אם לא נבחר"),
-  confidence: z.number().min(0).max(1).describe("רמת ביטחון בבחירה"),
-  reasoning: z.string().describe("הסבר קצר למה זה הזמן שנבחר"),
+  selectedIndex: z.number().min(-1).describe("Index of the selected time (0-based), or -1 if none selected"),
+  confidence: z.number().min(0).max(1).describe("Confidence level in the selection"),
+  reasoning: z.string().describe("Brief explanation of why this time was selected"),
 });
 
 /**
@@ -28,38 +28,38 @@ const slotModel = new ChatOpenAI({
 const slotPrompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `אתה עוזר לזהות איזה זמן פגישה הלקוח בחר מתוך רשימת אפשרויות.
+    `You help identify which meeting time the customer chose from a list of options.
 
-תפקיד: לקרוא את תשובת הלקוח ולהבין איזה זמן הוא בחר.
+Role: Read the customer's response and understand which time they selected.
 
-כללים:
-- אם הלקוח בחר זמן ספציפי → החזר את האינדקס שלו (0-based)
-- אם הלקוח לא בחר זמן ספציפי → החזר -1
+Rules:
+- If the customer chose a specific time → return its index (0-based)
+- If the customer didn't choose a specific time → return -1
 
-דוגמאות לבחירה ספציפית:
-- "בעשר" → זמן עם 10:00
-- "מחר ב-10" → זמן עם 10:00 מחר
-- "האופציה הראשונה" → אינדקס 0
-- "השני" → אינדקס 1
-- "14:00" → זמן עם 14:00
-- "יום שלישי" → היום שלישי (אם יש רק אחד)
+Examples of specific selection:
+- "at ten" → time with 10:00
+- "tomorrow at 10" → time with 10:00 tomorrow
+- "the first option" → index 0
+- "the second one" → index 1
+- "14:00" → time with 14:00
+- "Tuesday" → Tuesday (if there's only one)
 
-דוגמאות ללא בחירה ספציפית:
-- "מתי נוח לכם?" → -1 (שואל, לא בוחר)
-- "אין לי העדפה" → -1 (לא בחר)
-- "לא משנה" → -1 (לא בחר)
-- "בוקר" → -1 (לא ספציפי מספיק)
+Examples without specific selection:
+- "when is convenient for you?" → -1 (asking, not choosing)
+- "I don't have a preference" → -1 (didn't choose)
+- "doesn't matter" → -1 (didn't choose)
+- "morning" → -1 (not specific enough)
 
-חשוב: בחר רק אם הלקוח ציין זמן **ספציפי**!`,
+Important: Only select if the customer mentioned a **specific** time!`,
   ],
   [
     "human",
-    `זמנים זמינים:
+    `Available times:
 {availableSlots}
 
-תשובת הלקוח: "{userInput}"
+Customer's response: "{userInput}"
 
-איזה זמן הלקוח בחר? (החזר אינדקס, או -1 אם לא בחר זמן ספציפי)`,
+Which time did the customer choose? (Return index, or -1 if no specific time was chosen)`,
   ],
 ]);
 
