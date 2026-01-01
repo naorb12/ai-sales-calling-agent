@@ -22,15 +22,15 @@ export async function getAvailableSlots(
   const slots: TimeSlot[] = [];
   const now = new Date();
   
-  // Hebrew day names
+  // English day names
   const dayNames = [
-    "יום ראשון",
-    "יום שני",
-    "יום שלישי",
-    "יום רביעי",
-    "יום חמישי",
-    "יום שישי",
-    "יום שבת",
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
   ];
   
   // Generate slots for next week
@@ -56,16 +56,16 @@ export async function getAvailableSlots(
       if (slots.length >= slotsCount) break;
       
       const dateStr = date.toISOString().split("T")[0] ?? date.toISOString();
-      const dayName = dayNames[dayOfWeek] ?? "יום";
+      const dayName = dayNames[dayOfWeek] ?? "Day";
       
       // Format display text
       let displayText = "";
       if (dayOffset === 1) {
-        displayText = `מחר (${date.getDate()}/${date.getMonth() + 1}) בשעה ${time}`;
+        displayText = `Tomorrow (${date.getMonth() + 1}/${date.getDate()}) at ${time}`;
       } else if (dayOffset === 2) {
-        displayText = `מחרתיים (${date.getDate()}/${date.getMonth() + 1}) בשעה ${time}`;
+        displayText = `Day after tomorrow (${date.getMonth() + 1}/${date.getDate()}) at ${time}`;
       } else {
-        displayText = `${dayName} (${date.getDate()}/${date.getMonth() + 1}) בשעה ${time}`;
+        displayText = `${dayName} (${date.getMonth() + 1}/${date.getDate()}) at ${time}`;
       }
       
       slots.push({

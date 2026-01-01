@@ -25,7 +25,7 @@ export interface TurnResult {
 export async function processTurn(session: CallSession, userInput: string): Promise<TurnResult> {
   // Build conversation history string
   const historyText = session.history
-    .map((turn) => `סוכן: ${turn.agent}\nלקוח: ${turn.user}`)
+    .map((turn) => `Agent: ${turn.agent}\nUser: ${turn.user}`)
     .join("\n\n");
 
   // Step 1: Classify user intent using LLM
@@ -93,7 +93,7 @@ export async function processTurn(session: CallSession, userInput: string): Prom
   }
 
   // Step 5: Build selected slot text for END stage
-  let selectedSlotText = "לא נקבעה פגישה";
+  let selectedSlotText = "No meeting scheduled";
   if (session.selectedSlot) {
     selectedSlotText = session.selectedSlot.displayText;
   }
@@ -102,10 +102,10 @@ export async function processTurn(session: CallSession, userInput: string): Prom
   const formattedMessages = await promptTemplate.formatMessages({
     leadName: session.lead.name,
     company: session.lead.company,
-    industry: session.lead.industry || "טכנולוגיה",
-    history: historyText || "תחילת שיחה",
+    industry: session.lead.industry || "Technology",
+    history: historyText || "Start of conversation",
     userInput,
-    availableSlots: availableSlotsText || "לא זמין", // For BOOK_MEETING stage
+    availableSlots: availableSlotsText || "Not available", // For BOOK_MEETING stage
     selectedSlot: selectedSlotText, // For END stage
   });
 
@@ -176,11 +176,11 @@ export async function startConversation(session: CallSession): Promise<string> {
   const formattedMessages = await promptTemplate.formatMessages({
     leadName: session.lead.name,
     company: session.lead.company,
-    industry: session.lead.industry || "טכנולוגיה",
+    industry: session.lead.industry || "Technology",
     history: "",
-    userInput: "[התחלת שיחה - הצג את עצמך]",
-    availableSlots: "לא זמין",
-    selectedSlot: "לא נקבעה פגישה",
+    userInput: "[Start of conversation - introduce yourself]",
+    availableSlots: "Not available",
+    selectedSlot: "No meeting scheduled",
   });
 
   try {

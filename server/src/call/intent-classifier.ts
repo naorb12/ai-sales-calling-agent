@@ -20,8 +20,8 @@ const classifierModel = new ChatOpenAI({
  */
 const IntentSchema = z.object({
   intent: z.enum(["POSITIVE", "OBJECTION", "ASK_MORE_INFO", "NEGATIVE", "UNCLEAR", "REGRET"]),
-  confidence: z.number().min(0).max(1).describe("רמת הביטחון בסיווג (0-1)"),
-  reasoning: z.string().describe("הסבר קצר למה סיווגת ככה"),
+  confidence: z.number().min(0).max(1).describe("Confidence level in classification (0-1)"),
+  reasoning: z.string().describe("Brief explanation of why you classified it this way"),
 });
 
 /**
@@ -30,16 +30,16 @@ const IntentSchema = z.object({
 function getStageContext(stage: CallStage): string {
   switch (stage) {
     case CallStage.INTRO:
-      return "הסוכן שאל אם יש ללקוח דקה/זמן לשמוע על המוצר.";
+      return "The agent asked if the customer has a minute/time to hear about the product.";
 
     case CallStage.PITCH:
-      return "הסוכן הציג את המוצר ושאל אם הלקוח מעוניין לקבוע פגישה.";
+      return "The agent presented the product and asked if the customer is interested in scheduling a meeting.";
 
     case CallStage.BOOK_MEETING:
-      return "הסוכן מנסה לקבוע זמן פגישה עם הלקוח.";
+      return "The agent is trying to schedule a meeting time with the customer.";
 
     case CallStage.END:
-      return "השיחה הסתיימה, הסוכן אמר ביי. אם הלקוח מגיב בפרידה ('תודה', 'ביי', 'אוקיי') = NEGATIVE. רק חרטה מפורשת ('רגע!', 'חכה!') = REGRET.";
+      return "The conversation has ended, the agent said goodbye. If the customer responds with a farewell ('thanks', 'bye', 'okay') = NEGATIVE. Only explicit regret ('wait!', 'hold on!') = REGRET.";
 
     default:
       return "";
@@ -52,24 +52,24 @@ function getStageContext(stage: CallStage): string {
 const classifierPrompt = ChatPromptTemplate.fromMessages([
   [
     "system",
-    `אתה מנתח שיחות מכירה. תפקידך: **להבין מה הלקוח באמת רוצה** לפי ההקשר.
+    `You analyze sales conversations. Your role: **Understand what the customer really wants** based on context.
 
 ${INTENT_DEFINITIONS}
 
-**עקרון יסוד**: הבן את הכוונה האמיתית, לא את המילים. השתמש בהבנה סמנטית.`,
+**Fundamental principle**: Understand the true intent, not the words. Use semantic understanding.`,
   ],
   [
     "human",
-    `שלב: **{stage}**
-הקשר: {stageContext}
+    `Stage: **{stage}**
+Context: {stageContext}
 
-שיחה עד כה:
+Conversation so far:
 {history}
 
 ---
-הלקוח אמר עכשיו: "{userSpeech}"
+The customer said now: "{userSpeech}"
 
-מה הכוונה האמיתית של הלקוח?`,
+What is the customer's true intent?`,
   ],
 ]);
 
@@ -91,7 +91,7 @@ export async function classifyIntent(
       stage: CallStage[stage],
       stageContext: getStageContext(stage),
       userSpeech,
-      history: history || "תחילת שיחה",
+      history: history || "Start of conversation",
     });
 
     console.log(`\n🧠 Intent Classification:`);

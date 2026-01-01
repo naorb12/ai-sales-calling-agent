@@ -1,26 +1,23 @@
 import OpenAI from "openai";
 import { config } from "../config.js";
-import { numbersToHebrew } from "../utils/hebrew-numbers.js";
+// Keep import for future Hebrew support
+// import { numbersToHebrew } from "../utils/hebrew-numbers.js";
 
 const openai = new OpenAI({ apiKey: config.openai.apiKey });
 
 /**
- * Convert Hebrew text to speech using OpenAI TTS with retry logic
+ * Convert text to speech using OpenAI TTS with retry logic
  */
 export async function textToSpeech(text: string, retries = 3): Promise<Buffer> {
-  // Convert numbers to Hebrew words for better pronunciation
-  const hebrewText = numbersToHebrew(text);
-  
-  if (text !== hebrewText) {
-    console.log(`🔢 Converted: "${text.substring(0, 50)}..." → "${hebrewText.substring(0, 50)}..."`);
-  }
+  // Note: numbersToHebrew() is available in utils/hebrew-numbers.ts for future Hebrew support
+  // For now, using text directly for English TTS
   
   for (let i = 0; i < retries; i++) {
     try {
       const mp3 = await openai.audio.speech.create({
         model: "tts-1",
-        voice: "alloy", // Good for Hebrew
-        input: hebrewText, // Use converted text
+        voice: "alloy", // Good for English
+        input: text, // Use text directly
       });
 
       return Buffer.from(await mp3.arrayBuffer());

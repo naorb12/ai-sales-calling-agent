@@ -32,7 +32,7 @@ export const checkCalendarTool = tool(
       return JSON.stringify({
         success: true,
         slots,
-        message: "נמצאו 3 משבצות זמן פנויות",
+        message: "Found 3 available time slots",
       });
     }
 
@@ -45,30 +45,30 @@ export const checkCalendarTool = tool(
           duration: 30,
           link: "https://meet.google.com/abc-defg-hij",
         },
-        message: `הפגישה נקבעה בהצלחה ל-${datetime}`,
+        message: `Meeting successfully scheduled for ${datetime}`,
       });
     }
 
     return JSON.stringify({
       success: false,
-      message: "פעולה לא חוקית. השתמש ב-'check' או 'book' עם תאריך ושעה.",
+      message: "Invalid action. Use 'check' or 'book' with date and time.",
     });
   },
   {
     name: "check_calendar",
-    description: `כלי לבדיקת זמינות ביומן וקביעת פגישות.
+    description: `Tool for checking calendar availability and scheduling meetings.
 
-שימוש:
-- לבדיקת זמינות: { "action": "check" }
-- לקביעת פגישה: { "action": "book", "datetime": "2024-12-20 14:00" }
+Usage:
+- To check availability: { "action": "check" }
+- To book a meeting: { "action": "book", "datetime": "2024-12-20 14:00" }
 
-הכלי מחזיר JSON עם המידע הרלוונטי.`,
+The tool returns JSON with relevant information.`,
     schema: z.object({
-      action: z.enum(["check", "book"]).describe("הפעולה לביצוע: check לבדיקת זמינות, book לקביעת פגישה"),
+      action: z.enum(["check", "book"]).describe("Action to perform: check for availability, book to schedule a meeting"),
       datetime: z
         .string()
         .optional()
-        .describe("תאריך ושעה בפורמט YYYY-MM-DD HH:MM (חובה עבור book)"),
+        .describe("Date and time in format YYYY-MM-DD HH:MM (required for book)"),
     }),
   }
 );
@@ -80,12 +80,12 @@ export const knowledgeBaseTool = tool(
   async ({ question }) => {
     // Mock knowledge base - replace with real data later
     const knowledge: Record<string, string> = {
-      pricing: "Alta מציעה מחירים גמישים לפי גודל החברה. מתחילים מ-$500/חודש לצוותים קטנים.",
+      pricing: "Alta offers flexible pricing based on company size. Starting from $500/month for small teams.",
       integration:
-        "Alta משתלבת עם: Salesforce, HubSpot, Pipedrive, Monday.com ועוד. ההתקנה לוקחת פחות משעה.",
-      features: "אוטומציה של עדכוני CRM, סיווג וניקוד ליידים אוטומטי, מעקב ותזמון חכם, דוחות וניתוחים.",
-      competitors: "בניגוד לפתרונות אחרים, Alta מותאמת לשוק הישראלי ומשתלבת עם תהליכים מקומיים.",
-      setup: "ההתקנה פשוטה: חיבור ל-CRM, הגדרת כללים בסיסיים, והמערכת מתחילה לעבוד. יש תמיכה מלאה בעברית.",
+        "Alta integrates with: Salesforce, HubSpot, Pipedrive, Monday.com and more. Setup takes less than an hour.",
+      features: "CRM update automation, automatic lead scoring and classification, smart follow-up and scheduling, reports and analytics.",
+      competitors: "Unlike other solutions, Alta is tailored for the market and integrates with local processes.",
+      setup: "Setup is simple: connect to CRM, configure basic rules, and the system starts working. Full support is available.",
     };
 
     const lowerQuestion = question.toLowerCase();
@@ -95,13 +95,13 @@ export const knowledgeBaseTool = tool(
       }
     }
 
-    return "אין לי מידע ספציפי על זה כרגע. אשמח לקבוע לך פגישה עם המומחים שלנו שיוכלו לענות על כל שאלה.";
+    return "I don't have specific information about that right now. I'd be happy to schedule a meeting with our experts who can answer any questions.";
   },
   {
     name: "knowledge_base",
-    description: "קבל מידע על Alta - תמחור, אינטגרציות, פיצ'רים, והשוואה למתחרים",
+    description: "Get information about Alta - pricing, integrations, features, and competitor comparison",
     schema: z.object({
-      question: z.string().describe("השאלה שצריך לענות עליה"),
+      question: z.string().describe("The question that needs to be answered"),
     }),
   }
 );
