@@ -18,6 +18,12 @@ export interface Lead {
 export interface CompanyConfig {
   companyName: string;
   description: string;
+  lead?: {
+    name: string;
+    company: string;
+    email: string;
+    phone?: string;
+  };
 }
 
 /**

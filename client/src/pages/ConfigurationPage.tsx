@@ -1,13 +1,21 @@
 import { useState } from "react";
 import CompanyConfigForm from "../components/CompanyConfigForm";
+import LeadDetailsForm from "../components/LeadDetailsForm";
 import VoiceTestDialog from "../components/VoiceTestDialog";
-import type { CompanyConfig } from "../types/config";
+import type { CompanyConfig, LeadDetails } from "../types/config";
 import "./ConfigurationPage.css";
 
 export default function ConfigurationPage() {
   const [config, setConfig] = useState<CompanyConfig>({
     companyName: "",
     description: "",
+  });
+
+  const [lead, setLead] = useState<LeadDetails>({
+    name: "",
+    company: "",
+    email: "",
+    phone: "",
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -18,8 +26,20 @@ export default function ConfigurationPage() {
     return nameValid && descValid;
   };
 
+  const isLeadValid = (): boolean => {
+    const nameValid = lead.name.trim().length >= 2 && lead.name.trim().length <= 100;
+    const companyValid = lead.company.trim().length >= 2 && lead.company.trim().length <= 100;
+    const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lead.email);
+    const phoneValid = !lead.phone || /^[\d\s\-\+\(\)]+$/.test(lead.phone);
+    return nameValid && companyValid && emailValid && phoneValid;
+  };
+
+  const isFormValid = (): boolean => {
+    return isConfigValid() && isLeadValid();
+  };
+
   const handleTestClick = () => {
-    if (isConfigValid()) {
+    if (isFormValid()) {
       setIsDialogOpen(true);
     }
   };
@@ -30,12 +50,15 @@ export default function ConfigurationPage() {
         <header className="page-header">
           <h1 className="page-title">AI Sales Agent Configuration</h1>
           <p className="page-description">
-            Configure your company details and test how the AI sales agent represents your business in real-time voice conversations.
+            Configure your company details and prospect information to test the AI sales agent.
           </p>
         </header>
 
         <div className="page-content">
-          <CompanyConfigForm config={config} onChange={setConfig} />
+          <div className="config-forms">
+            <CompanyConfigForm config={config} onChange={setConfig} />
+            <LeadDetailsForm lead={lead} onChange={setLead} />
+          </div>
 
           <div className="test-panel">
             <h2 className="test-panel-title">Test Your Agent</h2>
@@ -46,14 +69,14 @@ export default function ConfigurationPage() {
             <button
               className="test-button"
               onClick={handleTestClick}
-              disabled={!isConfigValid()}
+              disabled={!isFormValid()}
             >
               🎙️ Start Voice Conversation
             </button>
 
-            {!isConfigValid() && (
+            {!isFormValid() && (
               <div className="validation-message">
-                💡 Complete the configuration form to test your agent
+                💡 Complete both configuration forms to test your agent
               </div>
             )}
 
@@ -79,6 +102,7 @@ export default function ConfigurationPage() {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         config={config}
+        lead={lead}
       />
     </div>
   );

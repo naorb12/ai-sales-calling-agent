@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createVoiceSession, type SessionStatus, type VoiceSession } from "../voice/voice-session";
-import type { CompanyConfig } from "../types/config";
+import type { CompanyConfig, LeadDetails } from "../types/config";
 import "./VoiceTestDialog.css";
 
 interface VoiceTestDialogProps {
   isOpen: boolean;
   onClose: () => void;
   config: CompanyConfig;
+  lead: LeadDetails;
 }
 
 interface TranscriptItem {
@@ -15,7 +16,7 @@ interface TranscriptItem {
   timestamp: number;
 }
 
-export default function VoiceTestDialog({ isOpen, onClose, config }: VoiceTestDialogProps) {
+export default function VoiceTestDialog({ isOpen, onClose, config, lead }: VoiceTestDialogProps) {
   const [status, setStatus] = useState<SessionStatus>("idle");
   const [transcript, setTranscript] = useState<TranscriptItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -35,13 +36,14 @@ export default function VoiceTestDialog({ isOpen, onClose, config }: VoiceTestDi
         },
         onError: setError,
       },
-      config
+      config,
+      lead
     );
 
     return () => {
       sessionRef.current?.stop();
     };
-  }, [isOpen, config]);
+  }, [isOpen, config, lead]);
 
   const handleStart = async () => {
     setError(null);

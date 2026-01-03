@@ -8,6 +8,16 @@ export interface CompanyConfig {
 }
 
 /**
+ * Lead details for testing the agent
+ */
+export interface LeadDetails {
+  name: string;
+  company: string;
+  email: string;
+  phone?: string; // Optional
+}
+
+/**
  * Validation result for company config
  */
 export interface ValidationResult {
@@ -15,6 +25,19 @@ export interface ValidationResult {
   errors: {
     companyName?: string;
     description?: string;
+  };
+}
+
+/**
+ * Validation result for lead details
+ */
+export interface LeadValidationResult {
+  isValid: boolean;
+  errors: {
+    name?: string;
+    company?: string;
+    email?: string;
+    phone?: string;
   };
 }
 

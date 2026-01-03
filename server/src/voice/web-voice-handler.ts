@@ -45,8 +45,8 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
     console.log("🔌 Web voice session closed");
   });
 
-  // Use hardcoded test lead
-  const lead: Lead = {
+  // Default lead (will be replaced by provided lead from config)
+  let lead: Lead = {
     name: "Test Lead",
     phone: "+972501234567",
     company: "Test Company",
@@ -85,6 +85,18 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
              description: msg.description || "A technology company",
            };
            activeSession.session.companyConfig = config;
+           
+           // Update lead if provided in config
+           if (msg.lead) {
+             activeSession.session.lead = {
+               name: msg.lead.name || "Test Lead",
+               phone: msg.lead.phone || "+972501234567",
+               company: msg.lead.company || "Test Company",
+               industry: msg.lead.industry,
+             };
+             console.log(`👤 Lead received: ${activeSession.session.lead.name} from ${activeSession.session.lead.company}`);
+           }
+           
            activeSession.configReceived = true;
            console.log(`⚙️  Config received: ${config.companyName}`);
            
