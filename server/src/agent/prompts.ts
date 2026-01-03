@@ -95,7 +95,7 @@ Respond according to the introduction (INTRO). Remember: concise, warm, friendly
 **Very important**: 
 - Don't be a broken record! If you already gave the pitch - don't repeat it
 - Always end with a CTA for a meeting
-- Concise: full pitch = 4-5 sentences, answers = 1-2 sentences`,
+- Concise: full pitch = 3-4 sentences, answers = 1-2 sentences`,
     ],
     [
       "human",
@@ -112,7 +112,7 @@ The customer said now: "{userInput}"
 ---
 **Read the history first!**
 - If you already gave a full pitch (explained the value proposition) → answer the question briefly (1-2 sentences), don't repeat the pitch
-- If you haven't given the pitch yet → give the full pitch now (4-5 sentences)`,
+- If you haven't given the pitch yet → give the full pitch now (3-4 sentences)`,
     ],
   ]),
 
