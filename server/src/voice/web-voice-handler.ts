@@ -109,12 +109,15 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
   console.log("💬 Sending initial greeting...");
   await sendInitialGreeting(activeSession);
 
-  ws.on("close", () => {
-    finishSession(activeSession);
-  });
 
   ws.on("error", (error) => {
     console.error("❌ WebSocket error:", error);
+    finishSession(activeSession);
+  });
+
+  // Only one close handler at the end
+  ws.on("close", () => {
+    console.log("🔌 Web voice session closed");
     finishSession(activeSession);
   });
 }

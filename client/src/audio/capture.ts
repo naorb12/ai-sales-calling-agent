@@ -7,6 +7,7 @@ export function createAudioCapture(): AudioCapture {
   let audioContext: AudioContext | null = null;
   let workletNode: AudioWorkletNode | null = null;
   let mediaStream: MediaStream | null = null;
+  let sourceNode: MediaStreamAudioSourceNode | null = null;
 
   async function start(onChunk: (chunk: ArrayBuffer) => void): Promise<void> {
     // Create AudioContext if needed
@@ -47,9 +48,19 @@ export function createAudioCapture(): AudioCapture {
       workletNode = null;
     }
 
+    if (sourceNode) {
+      sourceNode.disconnect();
+      sourceNode = null;
+    }
+
     if (mediaStream) {
       mediaStream.getTracks().forEach((track) => track.stop());
       mediaStream = null;
+    }
+
+    if (audioContext) {
+      audioContext.close();
+      audioContext = null;
     }
   }
 
