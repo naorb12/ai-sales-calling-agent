@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { config } from "../config.js";
+import { config } from "../../config.js";
 import * as fs from "fs";
 
 const openai = new OpenAI({ apiKey: config.openai.apiKey });

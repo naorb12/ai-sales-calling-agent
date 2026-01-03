@@ -1,6 +1,9 @@
 import "dotenv/config";
 
 export const config = {
+  cartesia: {
+    apiKey: process.env.CARTESIA_API_KEY || "",
+  },
   assemblyai: {
     apiKey: process.env.ASSEMBLY_AI_API_KEY || "",
   },
