@@ -1,13 +1,8 @@
-import VoiceCall from './components/VoiceCall'
+import ConfigurationPage from './pages/ConfigurationPage'
 import './App.css'
 
 function App() {
-
-  return (
-    <>
-      <VoiceCall />
-    </>
-  )
+  return <ConfigurationPage />
 }
 
 export default App

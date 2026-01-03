@@ -98,7 +98,11 @@ export async function processTurn(session: CallSession, userInput: string): Prom
     selectedSlotText = session.selectedSlot.displayText;
   }
 
-  // Step 6: Format prompt with variables
+  // Step 6: Extract company config or use defaults
+  const companyName = session.companyConfig?.companyName || "Our Company";
+  const companyDescription = session.companyConfig?.description || "A technology company";
+
+  // Step 7: Format prompt with variables
   const formattedMessages = await promptTemplate.formatMessages({
     leadName: session.lead.name,
     company: session.lead.company,
@@ -107,6 +111,8 @@ export async function processTurn(session: CallSession, userInput: string): Prom
     userInput,
     availableSlots: availableSlotsText || "Not available", // For BOOK_MEETING stage
     selectedSlot: selectedSlotText, // For END stage
+    companyName, // Dynamic company name
+    companyDescription, // Dynamic company description
   });
 
   // Step 7: Get agent response
@@ -172,6 +178,10 @@ export async function startConversation(session: CallSession): Promise<string> {
   // Get INTRO prompt template
   const promptTemplate = STAGE_PROMPTS[CallStage.INTRO];
 
+  // Extract company config or use defaults
+  const companyName = session.companyConfig?.companyName || "Our Company";
+  const companyDescription = session.companyConfig?.description || "A technology company";
+
   // Format with lead data - use empty string for userInput since this is the start
   const formattedMessages = await promptTemplate.formatMessages({
     leadName: session.lead.name,
@@ -181,6 +191,8 @@ export async function startConversation(session: CallSession): Promise<string> {
     userInput: "[Start of conversation - introduce yourself]",
     availableSlots: "Not available",
     selectedSlot: "No meeting scheduled",
+    companyName, // Dynamic company name
+    companyDescription, // Dynamic company description
   });
 
   try {

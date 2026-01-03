@@ -1,5 +1,6 @@
 import { createAudioCapture, type AudioCapture } from "../audio/capture.js";
 import { createAudioPlayback, type AudioPlayback } from "../audio/playback.js";
+import type { CompanyConfig } from "../types/config.js";
 
 export type SessionStatus = "idle" | "connecting" | "connected" | "error" | "ended";
 
@@ -25,7 +26,8 @@ export interface VoiceSession {
 }
 
 export function createVoiceSession(
-  callbacks: VoiceSessionCallbacks = {}
+  callbacks: VoiceSessionCallbacks = {},
+  config?: CompanyConfig
 ): VoiceSession {
   let ws: WebSocket | null = null;
   let status: SessionStatus = "idle";
@@ -99,6 +101,16 @@ export function createVoiceSession(
 
     ws.onopen = async () => {
       setStatus("connected");
+
+      // Send config as first message if provided
+      if (config && ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: "config",
+          companyName: config.companyName,
+          description: config.description,
+        }));
+        console.log("📤 Config sent to server");
+      }
 
       if (!audioCapture) {
         callbacks.onError?.("Audio capture not initialized");

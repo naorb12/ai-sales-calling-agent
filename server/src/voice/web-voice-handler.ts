@@ -1,5 +1,5 @@
 import type { WebSocket } from "ws";
-import type { CallSession, Lead } from "../types.js";
+import type { CallSession, Lead, CompanyConfig } from "../types.js";
 import { CallStage } from "../call/stages.js";
 import { startConversation, processTurn } from "../call/pipeline.js";
 import { CartesiaTTS } from "./tts/cartesia-tts.js";
@@ -16,7 +16,7 @@ interface ActiveSession {
   ws: WebSocket;
   isSpeaking: boolean; // Flag to prevent echo (agent speaking)
   transcriptionSession: StreamingSession | null;
-
+  configReceived: boolean; // Flag to track if config was received
 }
 
 const PCM_SAMPLE_RATE = 16000;
@@ -69,8 +69,54 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
     ws,
     isSpeaking: true, // Start with true to prevent audio collection during greeting
     transcriptionSession: null,
+    configReceived: false, // Wait for config before starting
   };
 
+
+   ws.on("message", async (data: Buffer) => {
+     if (data[0] === 0x7b) {
+       try {
+         const msg = JSON.parse(data.toString());
+         
+         // Handle config message
+         if (msg.type === "config") {
+           const config: CompanyConfig = {
+             companyName: msg.companyName || "Test Company",
+             description: msg.description || "A technology company",
+           };
+           activeSession.session.companyConfig = config;
+           activeSession.configReceived = true;
+           console.log(`⚙️  Config received: ${config.companyName}`);
+           
+           // Start conversation after config is received
+           if (!activeSession.session.history.length) {
+             console.log("💬 Sending initial greeting...");
+             await sendInitialGreeting(activeSession);
+           }
+           return;
+         }
+         
+         if (msg.type === "ping") {
+           sendEvent(ws, { type: "pong" });
+         } else if (msg.type === "playback_finished") {
+           activeSession.isSpeaking = false;
+           console.log("🎧 Audio playback finished - listening for user response...");
+         }
+       } catch {
+         // Ignore invalid JSON
+       }
+       return;
+     }
+ 
+     // Stream PCM audio directly to AssemblyAI (no buffering needed)
+     // Only process audio if config has been received
+     if (activeSession.configReceived && !activeSession.isSpeaking && activeSession.transcriptionSession) {
+       streamAudio(activeSession.transcriptionSession, data);
+     }
+   });
+
+   // Don't send initial greeting yet - wait for config message
+   console.log("⏳ Waiting for config message...");
   // Create AssemblyAI session once - it stays alive for entire conversation
   activeSession.transcriptionSession = await createStreamingSession(
     PCM_SAMPLE_RATE,
@@ -83,32 +129,7 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
     }
   );
 
-  ws.on("message", async (data: Buffer) => {
-    if (data[0] === 0x7b) {
-      try {
-        const msg = JSON.parse(data.toString());
-        if (msg.type === "ping") {
-          sendEvent(ws, { type: "pong" });
-        } else if (msg.type === "playback_finished") {
-          activeSession.isSpeaking = false;
-          console.log("🎧 Audio playback finished - listening for user response...");
-        }
-      } catch {
-        // Ignore invalid JSON
-      }
-      return;
-    }
-
-    // Stream PCM audio directly to AssemblyAI (no buffering needed)
-    if (!activeSession.isSpeaking && activeSession.transcriptionSession) {
-      streamAudio(activeSession.transcriptionSession, data);
-    }
-  });
-
-  // Send initial greeting - this will set isSpeaking appropriately
-  console.log("💬 Sending initial greeting...");
-  await sendInitialGreeting(activeSession);
-
+ 
 
   ws.on("error", (error) => {
     console.error("❌ WebSocket error:", error);

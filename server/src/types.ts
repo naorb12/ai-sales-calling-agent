@@ -13,6 +13,14 @@ export interface Lead {
 }
 
 /**
+ * Company configuration for dynamic agent behavior
+ */
+export interface CompanyConfig {
+  companyName: string;
+  description: string;
+}
+
+/**
  * Conversation turn in the call history
  */
 export interface ConversationTurn {
@@ -46,6 +54,7 @@ export interface CallSession {
   selectedSlot?: TimeSlot; // User's choice during call
   meetingBooked?: MeetingData; // Final booked meeting (after call)
   startTime: number;
+  companyConfig?: CompanyConfig; // Dynamic company configuration for agent
 }
 
 /**
