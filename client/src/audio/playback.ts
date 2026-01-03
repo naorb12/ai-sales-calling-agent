@@ -65,47 +65,61 @@ export function createAudioPlayback(): AudioPlayback {
   async function processQueue(): Promise<void> {
     if (isProcessing) return;
     isProcessing = true;
-
+  
     while (audioQueue.length > 0) {
       const item = audioQueue.shift();
       if (!item) break;
-
+  
       const ctx = ensureContext();
-
+  
       try {
         const arrayBuffer = base64ToArrayBuffer(item.base64);
         
-        // Verify we have data
         if (arrayBuffer.byteLength === 0) {
           continue;
         }
-
-        // Browser decodes MP3/WAV automatically using decodeAudioData
-        const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
-
+  
+        let audioBuffer: AudioBuffer;
+  
+        if (item.format === "pcm") {
+          // Manually decode raw PCM (16-bit signed, mono, 24kHz)
+          const sampleRate = 24000;
+          const int16Array = new Int16Array(arrayBuffer);
+          const float32Array = new Float32Array(int16Array.length);
+          
+          // Convert Int16 to Float32 (-1.0 to 1.0)
+          for (let i = 0; i < int16Array.length; i++) {
+            float32Array[i] = int16Array[i] / 32768;
+          }
+          
+          audioBuffer = ctx.createBuffer(1, float32Array.length, sampleRate);
+          audioBuffer.getChannelData(0).set(float32Array);
+        } else {
+          // MP3/WAV - browser decodes automatically
+          audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+        }
+  
         if (!audioBuffer || audioBuffer.length === 0) {
           continue;
         }
-
+  
         const source = ctx.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(ctx.destination);
-
+  
         sourceQueue.push(source);
-
-        // If we've fallen behind, catch up to current time
+  
         if (nextPlayTime < ctx.currentTime) {
           nextPlayTime = ctx.currentTime;
         }
-
+  
         schedulePlaySource(source);
         nextPlayTime += audioBuffer.duration;
       } catch (error) {
         console.error("Error decoding audio:", error);
-        // Continue with next item
       }
     }
-
+  
     isProcessing = false;
   }
 

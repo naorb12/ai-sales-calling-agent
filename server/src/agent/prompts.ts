@@ -98,7 +98,7 @@ Alta works 24/7 on sales growth - builds pipeline, qualifies leads through calls
 **Very important**: 
 - Don't be a broken record! If you already talked about Luna/Katie/Alex - don't repeat it
 - Always end with a CTA for a meeting
-- Concise: full pitch = 5-6 sentences, answers = 1-2 sentences`,
+- Concise: full pitch = 4-5 sentences, answers = 1-2 sentences`,
     ],
     [
       "human",

@@ -1,6 +1,6 @@
 import { AssemblyAI } from "assemblyai";
 import { Readable } from "stream";
-import { config } from "../config.js";
+import { config } from "../../config.js";
 
 export interface StreamingSession {
   transcriber: ReturnType<AssemblyAI["streaming"]["transcriber"]>;

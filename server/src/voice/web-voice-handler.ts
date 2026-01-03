@@ -2,14 +2,14 @@ import type { WebSocket } from "ws";
 import type { CallSession, Lead } from "../types.js";
 import { CallStage } from "../call/stages.js";
 import { startConversation, processTurn } from "../call/pipeline.js";
-import { textToSpeech } from "../voice/openai-tts.js";
+import { CartesiaTTS } from "./tts/cartesia-tts.js";
 import { getAvailableSlots, bookMeeting, sendCalendarInvite } from "../services/calendar-service.js";
 import {
   createStreamingSession,
   streamAudio,
   closeStreamingSession,
   type StreamingSession,
-} from "../voice/assemblyai-stt.js";
+} from "./stt/assemblyai-stt.js";
 
 interface ActiveSession {
   session: CallSession;
@@ -187,32 +187,39 @@ async function processUserSpeech(session: ActiveSession, userText: string) {
  * Send agent's audio response to client
  */
 async function sendAudio(session: ActiveSession, text: string) {
-  try {
-    // isSpeaking is already true from processUserSpeech
+  return new Promise<void>((resolve, reject) => {
+    let chunkCount = 0;
 
-    // Generate MP3 audio
-    const mp3Audio = await textToSpeech(text);
-    console.log(`🔊 Generated ${mp3Audio.length} bytes (MP3)`);
+    // Create TTS with callbacks for chunks and completion
+    const tts = new CartesiaTTS(
+      // onChunk - called for each audio chunk
+      (chunk) => {
+        sendEvent(session.ws, {
+          type: "tts_chunk",
+          audio: chunk.audio,
+          format: "pcm",
+          sampleRate: 24000,
+          ts: chunk.ts,
+        });
+        chunkCount++;
+      },
+      // onDone - called when generation is complete
+      () => {
+        tts.close();
+        console.log(`✅ Sent ${chunkCount} audio chunks`);
+        resolve();
+      }
+    );
 
-    // Send MP3 directly to browser (browser will decode it)
-    const base64Audio = mp3Audio.toString("base64");
-
-    sendEvent(session.ws, {
-      type: "tts_chunk",
-      audio: base64Audio,
-      format: "mp3",
-      ts: Date.now(),
-    });
-
-    console.log(`✅ Sent MP3 audio to client`);
-    
-    // Don't set timeout - wait for client to send "playback_finished" event
-    // This ensures we start listening exactly when audio finishes playing
-
-  } catch (error) {
-    console.error("❌ Error sending audio:", error);
-    session.isSpeaking = false; // Reset on error
-  }
+    // Connect and send text
+    tts.connect()
+      .then(() => tts.sendText(text))
+      .catch((error) => {
+        console.error("❌ Cartesia error:", error);
+        session.isSpeaking = false;
+        reject(error);
+      });
+  });
 }
 
 /**

@@ -2,8 +2,8 @@ import type { WebSocket } from "ws";
 import type { CallSession, Lead } from "../types.js";
 import { CallStage } from "../call/stages.js";
 import { startConversation, processTurn } from "../call/pipeline.js"; // ← Uses your pipeline!
-import { speechToTextFromBuffer } from "../voice/openai-stt.js";
-import { textToSpeech } from "../voice/openai-tts.js";
+import { speechToTextFromBuffer } from "../voice/stt/openai-stt.js";
+import { textToSpeech } from "../voice/tts/openai-tts.js";
 import { getAvailableSlots, bookMeeting, sendCalendarInvite } from "../services/calendar-service.js";
 import { mulawToWav, mp3ToMulaw } from "../voice/audio-converter.js";
 
