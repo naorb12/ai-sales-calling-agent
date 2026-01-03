@@ -1,4 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai";
+import { ChatGroq } from "@langchain/groq";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { MemorySaver } from "@langchain/langgraph";
 import { tools } from "./tools.js";
@@ -7,11 +8,11 @@ import { config } from "../config.js";
 /**
  * Create the OpenAI model instance
  */
-const model = new ChatOpenAI({
-  model: "gpt-4o-mini",
+const model = new ChatGroq({
+  model: "llama-3.3-70b-versatile",
   temperature: 0.3,
   
-  apiKey: config.openai.apiKey,
+  apiKey: config.groq.apiKey,
 });
 
 /**

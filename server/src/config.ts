@@ -1,6 +1,9 @@
 import "dotenv/config";
 
 export const config = {
+  groq: {
+    apiKey: process.env.GROQ_API_KEY || "",
+  },
   cartesia: {
     apiKey: process.env.CARTESIA_API_KEY || "",
   },
