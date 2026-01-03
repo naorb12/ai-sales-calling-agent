@@ -100,7 +100,6 @@ export default function VoiceTestDialog({ isOpen, onClose, config }: VoiceTestDi
           <div className="transcript-container">
             {transcript.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-state-icon">🎙️</div>
                 <div className="empty-state-text">
                   Click "Start Conversation" to begin testing
                 </div>
