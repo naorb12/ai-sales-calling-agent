@@ -37,7 +37,7 @@ output/
 test-output/
 
 # Google Calendar credentials (if implemented)
-./src/services/google-service-account.json
+src/services/google-service-account.json
 credentials.json
 token.json
 
