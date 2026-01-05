@@ -36,8 +36,10 @@ Thumbs.db
 output/
 test-output/
 
-# Google Calendar credentials (if implemented)
+# Google Calendar credentials
 src/services/google-service-account.json
+src/services/oauth-credentials.json
+src/services/oauth-token.json
 credentials.json
 token.json
 

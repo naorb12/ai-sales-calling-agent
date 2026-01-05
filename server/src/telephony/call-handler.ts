@@ -16,10 +16,25 @@ interface ActiveCall {
 }
 
 /**
+ * Validate email format
+ */
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
  * Main entry: Handle Twilio WebSocket connection for a call
  */
 export async function handleCallConnection(ws: WebSocket, lead: Lead) {
   console.log(`🔌 Call connected: ${lead.name}`);
+
+  // Validate email early - before call starts
+  if (lead.email && !isValidEmail(lead.email)) {
+    console.warn(`⚠️ Invalid email format for lead ${lead.name}: ${lead.email}. Meeting booking will proceed without attendee invitation.`);
+  } else if (!lead.email) {
+    console.warn(`⚠️ No email provided for lead ${lead.name}. Meeting booking will proceed without attendee invitation.`);
+  }
 
   // Setup session
   const session: CallSession = {
@@ -191,12 +206,34 @@ async function finishCall(call: ActiveCall) {
   console.log("\n📊 Call Summary");
   console.log(`Duration: ${Math.round((Date.now() - call.session.startTime) / 1000)}s`);
   console.log(`Stage: ${CallStage[call.session.stage]}`);
+  
+  // TTS Credits Summary (OpenAI TTS)
+  const creditsUsed = call.ttsCreditsUsed || 0;
+  const estimatedMinutes = Math.round((creditsUsed / 750) * 100) / 100; // ~750 chars per minute
+  const estimatedCost = Math.round((creditsUsed * 0.000011) * 10000) / 10000; // OpenAI TTS: $15/1M chars = ~$0.000015/char
+  
+  console.log(`\n💰 TTS Credits Used (OpenAI):`);
+  console.log(`   Characters: ${creditsUsed}`);
+  console.log(`   Estimated minutes: ~${estimatedMinutes}`);
+  console.log(`   Estimated cost: ~$${estimatedCost.toFixed(4)}`);
 
   if (call.session.selectedSlot) {
     console.log(`📅 Booking: ${call.session.selectedSlot.displayText}`);
-    const booking = await bookMeeting(call.session.selectedSlot, [call.session.lead.phone]);
-    await sendCalendarInvite(call.session.lead.phone, call.session.selectedSlot, booking.meetingLink);
-    console.log(`✅ Booked: ${booking.eventId}`);
+    
+    // Email was already validated at call start - use it if valid
+    const attendeeEmails: string[] = [];
+    if (call.session.lead.email && isValidEmail(call.session.lead.email)) {
+      attendeeEmails.push(call.session.lead.email);
+    }
+    
+    const booking = await bookMeeting(call.session.selectedSlot, attendeeEmails);
+    if (attendeeEmails.length > 0) {
+      console.log(`✅ Booked: ${booking.eventId}`);
+      console.log(`   📧 Google Calendar automatically sent invitation to: ${attendeeEmails.join(", ")}`);
+    } else {
+      console.log(`✅ Booked: ${booking.eventId}`);
+      console.log(`   ⚠️ Meeting booked but no invitations sent (no valid email provided)`);
+    }
   }
 }
 

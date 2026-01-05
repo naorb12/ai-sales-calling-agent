@@ -17,9 +17,18 @@ interface ActiveSession {
   isSpeaking: boolean; // Flag to prevent echo (agent speaking)
   transcriptionSession: StreamingSession | null;
   configReceived: boolean; // Flag to track if config was received
+  totalCharacters: number; // Track total characters for Cartesia credit estimation
 }
 
 const PCM_SAMPLE_RATE = 16000;
+
+/**
+ * Validate email format
+ */
+function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
 
 /**
  * Send JSON event to client
@@ -49,6 +58,7 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
   let lead: Lead = {
     name: "Test Lead",
     phone: "+972501234567",
+    email: "test@test.com",
     company: "Test Company",
     industry: "טכנולוגיה",
   };
@@ -60,9 +70,18 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
     stage: CallStage.INTRO,
     history: [],
     repeatCount: 0,
-    availableSlots: await getAvailableSlots(),
+    availableSlots: [],
     startTime: Date.now(),
   };
+  console.log("🔍 Checking calendar slots...");
+   // Fetch calendar slots in background (non-blocking)
+   getAvailableSlots().then((slots) => {
+    session.availableSlots = slots;
+    console.log(`✅ Calendar slots loaded: ${slots.length} available`);
+  }).catch((error) => {
+    console.error("⚠️ Failed to fetch calendar slots:", error);
+    // Continue with empty slots - agent can still work
+  });
 
   const activeSession: ActiveSession = {
     session,
@@ -70,6 +89,7 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
     isSpeaking: true, // Start with true to prevent audio collection during greeting
     transcriptionSession: null,
     configReceived: false, // Wait for config before starting
+    totalCharacters: 0, // Initialize character counter
   };
 
 
@@ -88,9 +108,19 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
            
            // Update lead if provided in config
            if (msg.lead) {
+             const leadEmail = msg.lead.email;
+             
+             // Validate email early - before conversation starts
+             if (leadEmail && !isValidEmail(leadEmail)) {
+               console.warn(`⚠️ Invalid email format for lead ${msg.lead.name || "Test Lead"}: ${leadEmail}. Meeting booking will proceed without attendee invitation.`);
+             } else if (!leadEmail) {
+               console.warn(`⚠️ No email provided for lead ${msg.lead.name || "Test Lead"}. Meeting booking will proceed without attendee invitation.`);
+             }
+             
              activeSession.session.lead = {
-               name: msg.lead.name || "Test Lead",
+               name: msg.lead.name.trim().split(/\s+/)[0] || "Test Lead",
                phone: msg.lead.phone || "+972501234567",
+               email: leadEmail,
                company: msg.lead.company || "Test Company",
                industry: msg.lead.industry,
              };
@@ -223,6 +253,12 @@ async function processUserSpeech(session: ActiveSession, userText: string) {
  * Send agent's audio response to client
  */
 async function sendAudio(session: ActiveSession, text: string) {
+  // Track characters for Cartesia credit estimation
+  const charCount = text.length;
+  session.totalCharacters += charCount;
+  
+  console.log(`🔌 Connecting to Cartesia TTS...`);
+  
   return new Promise<void>((resolve, reject) => {
     let chunkCount = 0;
 
@@ -242,14 +278,17 @@ async function sendAudio(session: ActiveSession, text: string) {
       // onDone - called when generation is complete
       () => {
         tts.close();
-        console.log(`✅ Sent ${chunkCount} audio chunks`);
+        console.log(`✅ Sent ${chunkCount} audio chunks (${charCount} chars)`);
         resolve();
       }
     );
 
     // Connect and send text
     tts.connect()
-      .then(() => tts.sendText(text))
+      .then(() => {
+        console.log(`✅ Cartesia connected, sending ${charCount} characters...`);
+        tts.sendText(text);
+      })
       .catch((error) => {
         console.error("❌ Cartesia error:", error);
         session.isSpeaking = false;
@@ -265,16 +304,36 @@ async function finishSession(session: ActiveSession) {
   console.log("\n📊 Session Summary");
   console.log(`Duration: ${Math.round((Date.now() - session.session.startTime) / 1000)}s`);
   console.log(`Stage: ${CallStage[session.session.stage]}`);
+  
+  // Log Cartesia credits used
+  const estimatedCost = session.totalCharacters * 0.000006;
+  console.log(`💰 Cartesia: ${session.totalCharacters} chars (~$${estimatedCost.toFixed(6)})`);
 
   if (session.transcriptionSession) {
     await closeStreamingSession(session.transcriptionSession);
   }
   
-  if (session.session.selectedSlot) {
+   if (session.session.selectedSlot) {
     console.log(`📅 Booking: ${session.session.selectedSlot.displayText}`);
-    const booking = await bookMeeting(session.session.selectedSlot, [session.session.lead.phone]);
-    await sendCalendarInvite(session.session.lead.phone, session.session.selectedSlot, booking.meetingLink);
-    console.log(`✅ Booked: ${booking.eventId}`);
+    
+    // Email was already validated when lead was received - use it if valid
+    const attendeeEmails: string[] = [];
+    if (session.session.lead.email && isValidEmail(session.session.lead.email)) {
+      attendeeEmails.push(session.session.lead.email);
+    }
+    
+    const booking = await bookMeeting(
+      session.session.selectedSlot,
+      attendeeEmails,
+      session.session.companyConfig // Pass company config for dynamic meeting title
+    );
+    if (attendeeEmails.length > 0) {
+      console.log(`✅ Booked: ${booking.eventId}`);
+      console.log(`   📧 Google Calendar automatically sent invitation to: ${attendeeEmails.join(", ")}`);
+    } else {
+      console.log(`✅ Booked: ${booking.eventId}`);
+      console.log(`   ⚠️ Meeting booked but no invitations sent (no valid email provided)`);
+    }
   }
 }
 

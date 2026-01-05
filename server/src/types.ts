@@ -7,6 +7,7 @@ import { Intent } from "./call/intents.js";
 export interface Lead {
   name: string;
   phone: string;
+  email: string; // Email for calendar invitations
   company: string;
   industry?: string;
   notes?: string;

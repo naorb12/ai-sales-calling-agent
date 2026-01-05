@@ -6,12 +6,13 @@ import { tools } from "./tools.js";
 import { config } from "../config.js";
 
 /**
- * Create the OpenAI model instance
+ * Create the Groq model instance with timeout
  */
 const model = new ChatGroq({
   model: "llama-3.3-70b-versatile",
   temperature: 0.3,
-  
+  timeout: 30000, // 30 second timeout
+  maxRetries: 2,
   apiKey: config.groq.apiKey,
 });
 
