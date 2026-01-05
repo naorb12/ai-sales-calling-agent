@@ -90,13 +90,13 @@ export function createVoiceSession(
       }
     });
 
-    // Connect WebSocket - use server port (3000) instead of client dev server port
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // If client is on different port, connect to server port 3000
-    const serverHost = window.location.hostname === "localhost" 
-      ? "localhost:3000" 
-      : window.location.host; // Use same host in production
-    const wsUrl = `${protocol}//${serverHost}/ws`;
+    // Connect WebSocket - use environment variable for server URL
+    const serverUrl = import.meta.env.VITE_SERVER_URL || 
+      (window.location.hostname === "localhost" 
+        ? "ws://localhost:3000" 
+        : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`);
+    
+    const wsUrl = serverUrl.endsWith("/ws") ? serverUrl : `${serverUrl}/ws`;
     ws = new WebSocket(wsUrl);
     ws.binaryType = "arraybuffer";
 
