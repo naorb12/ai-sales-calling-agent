@@ -1,19 +1,18 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { ChatGroq } from "@langchain/groq";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { MemorySaver } from "@langchain/langgraph";
 import { tools } from "./tools.js";
 import { config } from "../config.js";
 
 /**
- * Create the Groq model instance with timeout
+ * Create the OpenAI model instance with timeout (temporarily using 4o-mini for cost checking)
  */
-const model = new ChatGroq({
-  model: "llama-3.3-70b-versatile",
+const model = new ChatOpenAI({
+  model: "gpt-4o-mini",
   temperature: 0.3,
   timeout: 30000, // 30 second timeout
   maxRetries: 2,
-  apiKey: config.groq.apiKey,
+  apiKey: config.openai.apiKey,
 });
 
 /**
