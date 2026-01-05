@@ -13,6 +13,7 @@ interface ActiveCall {
   streamSid: string | undefined;
   ws: WebSocket; // WebSocket for sending audio
   isSpeaking: boolean; // Flag to prevent echo (agent speaking)
+  ttsCreditsUsed: number; // Track TTS characters used for cost estimation
 }
 
 /**
@@ -47,7 +48,7 @@ export async function handleCallConnection(ws: WebSocket, lead: Lead) {
     startTime: Date.now(),
   };
 
-  const call: ActiveCall = { session, audioBuffer: [], streamSid: undefined, ws, isSpeaking: false };
+  const call: ActiveCall = { session, audioBuffer: [], streamSid: undefined, ws, isSpeaking: false, ttsCreditsUsed: 0 };
 
   // Handle Twilio messages
   ws.on("message", async (data: Buffer) => {
@@ -158,6 +159,9 @@ async function sendAudio(call: ActiveCall, text: string) {
   try {
     // isSpeaking is already true from processUserSpeech
     call.audioBuffer = []; // Clear any buffered audio
+
+    // Track TTS credits used
+    call.ttsCreditsUsed += text.length;
 
     // Generate MP3 audio
     const mp3Audio = await textToSpeech(text);

@@ -60,6 +60,7 @@ app.post("/api/call", async (req, res) => {
     const lead: Lead = {
       name: req.body.name,
       phone: req.body.phone,
+      email: req.body.email,
       company: req.body.company || "Unknown",
       industry: req.body.industry,
     };
@@ -100,6 +101,7 @@ export function startServer() {
     const lead = Array.from(callLeads.values())[0] || {
       name: "Test Lead",
       phone: "+972501234567",
+      email: "test@test.com",
       company: "Test Company",
       industry: "טכנולוגיה",
     };
