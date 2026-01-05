@@ -21,32 +21,41 @@ function getCalendarClient() {
     const credentialsPath = path.join(__dirname, "oauth-credentials.json");
     const tokenPath = path.join(__dirname, "oauth-token.json");
 
-    // Check if OAuth credentials exist
-    if (!fs.existsSync(credentialsPath)) {
+    let credentials: { installed?: { client_id: string; client_secret: string; redirect_uris: string[] }; web?: { client_id: string; client_secret: string; redirect_uris: string[] } };
+    let tokens: { access_token?: string; refresh_token?: string; scope?: string; token_type?: string; expiry_date?: number };
+
+    // Try to load from files first (local development)
+    if (fs.existsSync(credentialsPath) && fs.existsSync(tokenPath)) {
+      credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
+      tokens = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
+      console.log("✅ Loaded OAuth credentials from files");
+    }
+    // Fall back to environment variables (production)
+    else if (process.env.GOOGLE_OAUTH_CREDENTIALS && process.env.GOOGLE_OAUTH_TOKEN) {
+      credentials = JSON.parse(process.env.GOOGLE_OAUTH_CREDENTIALS);
+      tokens = JSON.parse(process.env.GOOGLE_OAUTH_TOKEN);
+      console.log("✅ Loaded OAuth credentials from environment variables");
+      
+      // Write to files so token refresh can update them
+      fs.writeFileSync(credentialsPath, process.env.GOOGLE_OAUTH_CREDENTIALS);
+      fs.writeFileSync(tokenPath, process.env.GOOGLE_OAUTH_TOKEN);
+    } else {
       throw new Error(
-        `OAuth credentials not found at ${credentialsPath}.\n` +
-        "Please follow the setup instructions in the README to create OAuth credentials."
+        `OAuth credentials not found. Please either:\n` +
+        `1. Create ${credentialsPath} and ${tokenPath} files, or\n` +
+        `2. Set GOOGLE_OAUTH_CREDENTIALS and GOOGLE_OAUTH_TOKEN environment variables`
       );
     }
 
-    if (!fs.existsSync(tokenPath)) {
-      throw new Error(
-        `OAuth token not found at ${tokenPath}.\n` +
-        "Please run 'npm run auth' to authenticate with Google Calendar."
-      );
+    const creds = credentials.installed || credentials.web;
+    if (!creds || !creds.client_id || !creds.client_secret) {
+      throw new Error("Invalid OAuth credentials: missing client_id or client_secret");
     }
-
-    // Load OAuth2 credentials
-    const credentials = JSON.parse(fs.readFileSync(credentialsPath, "utf8"));
-    const tokens = JSON.parse(fs.readFileSync(tokenPath, "utf8"));
-
-    const { client_secret, client_id, redirect_uris } = 
-      credentials.installed || credentials.web;
 
     const oAuth2Client = new google.auth.OAuth2(
-      client_id,
-      client_secret,
-      redirect_uris[0]
+      creds.client_id,
+      creds.client_secret,
+      creds.redirect_uris?.[0] || "http://localhost"
     );
 
     oAuth2Client.setCredentials(tokens);
@@ -56,7 +65,9 @@ function getCalendarClient() {
       if (newTokens.refresh_token) {
         tokens.refresh_token = newTokens.refresh_token;
       }
-      tokens.access_token = newTokens.access_token;
+      if (newTokens.access_token) {
+        tokens.access_token = newTokens.access_token;
+      }
       fs.writeFileSync(tokenPath, JSON.stringify(tokens, null, 2));
       console.log("🔄 OAuth token refreshed and saved");
     });
