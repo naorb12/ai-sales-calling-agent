@@ -49,7 +49,7 @@ export default function ConfigurationPage() {
     <div className="configuration-page">
       <div className="page-container">
         <header className="page-header">
-          <h1 className="page-title">AI Sales Agent Configuration</h1>
+          <h1 className="page-title">AI Sales Agent</h1>
           <p className="page-description">
             Configure your company details and prospect information to test the AI sales agent.
           </p>
