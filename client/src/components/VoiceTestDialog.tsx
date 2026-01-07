@@ -61,6 +61,7 @@ export default function VoiceTestDialog({ isOpen, onClose, config, lead }: Voice
 
   const handleClose = () => {
     sessionRef.current?.stop();
+    setTranscript([]);
     onClose();
   };
 
@@ -70,7 +71,7 @@ export default function VoiceTestDialog({ isOpen, onClose, config, lead }: Voice
     switch (status) {
       case "idle": return "Ready to start";
       case "connecting": return "Connecting...";
-      case "connected": return "Connected - Listening";
+      case "connected": return "Connected - Ongoing Conversation";
       case "error": return "Error";
       case "ended": return "Session ended";
       default: return "Unknown";

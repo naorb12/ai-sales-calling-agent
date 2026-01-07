@@ -192,6 +192,13 @@ async function sendInitialGreeting(session: ActiveSession) {
   session.isSpeaking = true; // Prevent audio collection during greeting
   const greeting = await startConversation(session.session);
   console.log(`💬 Agent: ${greeting}`);
+  if (greeting){
+    sendEvent(session.ws, {
+      type: "agent_chunk",
+      text: greeting,
+      ts: Date.now(),
+    });
+  }
   await sendAudio(session, greeting);
   // sendAudio will reset isSpeaking after audio finishes
 }
