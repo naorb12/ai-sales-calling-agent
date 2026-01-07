@@ -52,7 +52,7 @@ export const STAGE_PROMPTS: Record<CallStage, ChatPromptTemplate> = {
     ],
     [
       "human",
-      `Customer: {leadName} from {company} in {industry}
+      `Customer: {leadName} from {company} in the {industry} industry
 
 {history}
 
