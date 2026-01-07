@@ -4,7 +4,7 @@ An AI-powered sales conversation agent that conducts natural voice conversations
 
 ## Overview
 
-This project consists of a full-stack application that enables AI-driven sales conversations through voice interfaces. The agent uses advanced language models to understand context, handle objections, and guide conversations toward booking meetings. It supports both web-based voice conversations (requiring no additional setup) and telephony integration via Twilio.
+This project consists of a full-stack application that enables AI-driven sales conversations through voice interfaces. The agent is fully configurable for your desired company - simply provide your company name and description, and the agent will adapt its pitch and conversation style accordingly. The agent uses advanced language models to understand context, handle objections, and guide conversations toward booking meetings. It supports both web-based voice conversations (requiring no additional setup) and telephony integration via Twilio.
 
 ## Key Features
 
@@ -12,6 +12,11 @@ This project consists of a full-stack application that enables AI-driven sales c
 - Browser-based voice conversations with real-time audio streaming
 - No additional setup or configuration required
 - Works directly in modern web browsers
+
+**Company Configuration**
+- Fully configurable agent that adapts to your company
+- Provide company name and description to customize the agent's pitch and conversation style
+- No code changes required - configure through the web interface
 
 **Intelligent Conversation Flow**
 - Context-aware intent classification using semantic understanding
@@ -100,14 +105,6 @@ npm run dev
 6. Open your browser to the client URL (typically `http://localhost:5173`)
 
 7. Configure company details and lead information, then start a voice conversation
-
-## Use Cases
-
-- **Sales Demo**: Test and demonstrate AI sales capabilities
-- **Lead Qualification**: Automate initial lead conversations
-- **Meeting Booking**: Streamline appointment scheduling
-- **Training**: Practice sales conversations with AI feedback
-- **Integration**: Embed voice sales agent into existing platforms
 
 ## Documentation
 
