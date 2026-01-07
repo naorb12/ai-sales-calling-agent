@@ -62,6 +62,7 @@ export interface CallSession {
   meetingBooked?: MeetingData; // Final booked meeting (after call)
   startTime: number;
   companyConfig?: CompanyConfig; // Dynamic company configuration for agent
+  useFallbackAgent: boolean;
 }
 
 /**

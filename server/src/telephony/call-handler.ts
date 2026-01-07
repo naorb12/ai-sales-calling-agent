@@ -46,6 +46,7 @@ export async function handleCallConnection(ws: WebSocket, lead: Lead) {
     repeatCount: 0,
     availableSlots: await getAvailableSlots(),
     startTime: Date.now(),
+    useFallbackAgent: false,
   };
 
   const call: ActiveCall = { session, audioBuffer: [], streamSid: undefined, ws, isSpeaking: false, ttsCreditsUsed: 0 };

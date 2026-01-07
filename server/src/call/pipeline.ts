@@ -1,5 +1,5 @@
 import { AIMessage } from "@langchain/core/messages";
-import { agent } from "../agent/agent.js";
+import { primaryAgent, secondaryAgent } from "../agent/agent.js";
 import { classifyIntent } from "./intent-classifier.js";
 import { nextStage } from "./rules.js";
 import { STAGE_PROMPTS } from "../agent/prompts.js";
@@ -119,14 +119,7 @@ export async function processTurn(session: CallSession, userInput: string): Prom
   console.log(`\n🤖 Generating agent response for stage: ${CallStage[session.stage]}...`);
 
   try {
-    const result = await agent.invoke(
-      {
-        messages: formattedMessages,
-      },
-      {
-        configurable: { thread_id: session.id },
-      }
-    );
+    const result = await invokeAgentWithFallback(session, formattedMessages);
 
     // Extract response text from the agent result
     let agentResponse = "";
@@ -196,14 +189,7 @@ export async function startConversation(session: CallSession): Promise<string> {
   });
 
   try {
-    const result = await agent.invoke(
-      {
-        messages: formattedMessages,
-      },
-      {
-        configurable: { thread_id: session.id },
-      }
-    );
+    const result = await invokeAgentWithFallback(session, formattedMessages);
 
     const messages = result.messages;
     const lastMessage = messages[messages.length - 1];
@@ -229,3 +215,27 @@ export async function startConversation(session: CallSession): Promise<string> {
   }
 }
 
+/**
+ * Invoke agent with automatic fallback on error
+ */
+async function invokeAgentWithFallback(
+  session: CallSession,
+  formattedMessages: Awaited<ReturnType<typeof STAGE_PROMPTS[CallStage.INTRO]['formatMessages']>>
+) {
+  const activeAgent = session.useFallbackAgent ? secondaryAgent : primaryAgent;
+
+  return activeAgent.invoke(
+    { messages: formattedMessages },
+    { configurable: { thread_id: session.id } }
+  ).catch((error) => {
+    if (!session.useFallbackAgent) {
+      console.log("🔄 Primary failed, using fallback model");
+      session.useFallbackAgent = true;
+      return secondaryAgent.invoke(
+        { messages: formattedMessages },
+        { configurable: { thread_id: session.id } }
+      );
+    }
+    throw error;
+  });
+}

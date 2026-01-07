@@ -1,16 +1,23 @@
 import { ChatOpenAI } from "@langchain/openai";
+import { ChatGroq } from "@langchain/groq";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { MemorySaver } from "@langchain/langgraph";
 import { tools } from "./tools.js";
 import { config } from "../config.js";
 
-/**
- * Create the OpenAI model instance with timeout (temporarily using 4o-mini for cost checking)
- */
-const model = new ChatOpenAI({
-  model: "gpt-4o-mini",
+
+const primaryModel = new ChatGroq({
+  model: "llama-3.3-70b-versatile",
   temperature: 0.3,
   timeout: 30000, // 30 second timeout
+  maxRetries: 2,
+  apiKey: config.groq.apiKey,
+});
+
+const secondaryModel = new ChatOpenAI({
+  model: "gpt-4o-mini",
+  temperature: 0.3,
+  timeout: 30000,
   maxRetries: 2,
   apiKey: config.openai.apiKey,
 });
@@ -24,11 +31,20 @@ const model = new ChatOpenAI({
  * 
  * Each stage has its own focused prompt with relevant instructions.
  */
-export const agent = createReactAgent({
-  llm: model,
+
+const checkpointer = new MemorySaver();
+
+export const primaryAgent = createReactAgent({
+  llm: primaryModel,
   tools,
-  checkpointer: new MemorySaver(),
+  checkpointer,
 });
 
-export type AgentType = typeof agent;
+export const secondaryAgent = createReactAgent({
+  llm: secondaryModel,
+  tools: [],
+  checkpointer,
+});
+
+export type AgentType = typeof primaryAgent;
 

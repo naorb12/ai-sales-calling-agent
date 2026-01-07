@@ -2,78 +2,6 @@ import { tool } from "@langchain/core/tools";
 import { z } from "zod";
 
 /**
- * Calendar tool for checking availability and booking meetings
- * For now, returns mock data. Will integrate with Google Calendar later.
- */
-export const checkCalendarTool = tool(
-  async ({ action, datetime }) => {
-    // Mock implementation for testing
-    if (action === "check") {
-      // Return available slots
-      const now = new Date();
-      const slots = [
-        {
-          date: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          time: "14:00",
-          available: true,
-        },
-        {
-          date: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          time: "16:00",
-          available: true,
-        },
-        {
-          date: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-          time: "10:00",
-          available: true,
-        },
-      ];
-
-      return JSON.stringify({
-        success: true,
-        slots,
-        message: "Found 3 available time slots",
-      });
-    }
-
-    if (action === "book" && datetime) {
-      // Book a meeting
-      return JSON.stringify({
-        success: true,
-        meeting: {
-          datetime,
-          duration: 30,
-          link: "https://meet.google.com/abc-defg-hij",
-        },
-        message: `Meeting successfully scheduled for ${datetime}`,
-      });
-    }
-
-    return JSON.stringify({
-      success: false,
-      message: "Invalid action. Use 'check' or 'book' with date and time.",
-    });
-  },
-  {
-    name: "check_calendar",
-    description: `Tool for checking calendar availability and scheduling meetings.
-
-Usage:
-- To check availability: { "action": "check" }
-- To book a meeting: { "action": "book", "datetime": "2024-12-20 14:00" }
-
-The tool returns JSON with relevant information.`,
-    schema: z.object({
-      action: z.enum(["check", "book"]).describe("Action to perform: check for availability, book to schedule a meeting"),
-      datetime: z
-        .string()
-        .optional()
-        .describe("Date and time in format YYYY-MM-DD HH:MM (required for book)"),
-    }),
-  }
-);
-
-/**
  * Knowledge base tool for Alta product information
  */
 export const knowledgeBaseTool = tool(
@@ -106,5 +34,5 @@ export const knowledgeBaseTool = tool(
   }
 );
 
-export const tools = [checkCalendarTool, knowledgeBaseTool];
+export const tools = [knowledgeBaseTool];
 

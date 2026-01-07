@@ -72,6 +72,7 @@ export async function handleWebVoiceConnection(ws: WebSocket) {
     repeatCount: 0,
     availableSlots: [],
     startTime: Date.now(),
+    useFallbackAgent: false,
   };
   console.log("🔍 Checking calendar slots...");
    // Fetch calendar slots in background (non-blocking)
