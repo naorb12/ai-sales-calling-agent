@@ -14,6 +14,7 @@ export default function ConfigurationPage() {
   const [lead, setLead] = useState<LeadDetails>({
     name: "",
     company: "",
+    industry: "",
     email: "",
     phone: "",
   });
