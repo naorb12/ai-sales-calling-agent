@@ -112,6 +112,7 @@ export function createVoiceSession(
           lead: lead ? {
             name: lead.name,
             company: lead.company,
+            industry: lead.industry,
             email: lead.email,
             phone: lead.phone || undefined,
           } : undefined,

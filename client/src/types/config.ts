@@ -13,6 +13,7 @@ export interface CompanyConfig {
 export interface LeadDetails {
   name: string;
   company: string;
+  industry: string;
   email: string;
   phone?: string; // Optional
 }

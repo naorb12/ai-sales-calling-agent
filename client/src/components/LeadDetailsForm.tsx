@@ -11,6 +11,7 @@ export default function LeadDetailsForm({ lead, onChange }: LeadDetailsFormProps
   const [errors, setErrors] = useState<{
     name?: string;
     company?: string;
+    industry?: string;
     email?: string;
     phone?: string;
   }>({});
@@ -18,6 +19,7 @@ export default function LeadDetailsForm({ lead, onChange }: LeadDetailsFormProps
   const [touched, setTouched] = useState<{
     name?: boolean;
     company?: boolean;
+    industry?: boolean;
     email?: boolean;
     phone?: boolean;
   }>({});
@@ -46,6 +48,14 @@ export default function LeadDetailsForm({ lead, onChange }: LeadDetailsFormProps
         newErrors.company = "Must be less than 100 characters";
       } else {
         delete newErrors.company;
+      }
+    }
+
+    if (field === "industry") {
+      if (value.trim() && value.trim().length > 100) {
+        newErrors.industry = "Must be less than 100 characters";
+      } else {
+        delete newErrors.industry;
       }
     }
 
@@ -126,6 +136,24 @@ export default function LeadDetailsForm({ lead, onChange }: LeadDetailsFormProps
         )}
       </div>
 
+      <div className="lead-form-group">
+        <label htmlFor="leadIndustry" className="lead-form-label">
+          Industry <span className="optional">(optional)</span>
+        </label>
+        <input
+          id="leadIndustry"
+          type="text"
+          className={`lead-form-input ${errors.industry && touched.industry ? "lead-input-error" : ""}`}
+          placeholder="e.g., Tech, Food, Healthcare"
+          value={lead.industry || ""}
+          onChange={(e) => handleFieldChange("industry", e.target.value)}
+          onBlur={() => handleBlur("industry")}
+        />
+        {errors.industry && touched.industry && (
+          <span className="lead-error-message">{errors.industry}</span>
+        )}
+      </div>
+      
       <div className="lead-form-group">
         <label htmlFor="leadEmail" className="lead-form-label">
           Email
