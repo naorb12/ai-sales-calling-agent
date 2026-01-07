@@ -17,7 +17,9 @@ Backend server for the AI Sales Calling Agent. The agent conducts sales conversa
 
 - Language: TypeScript
 - AI Framework: LangChain
-- LLM: GPT-4o-mini (OpenAI)
+- LLM: Llama 3.3 70B (via Groq) for main agent
+- Classification: GPT-4o for intent classification and slot extraction
+- Fallback: GPT-4o as secondary agent fallback
 - STT: AssemblyAI (web voice) / OpenAI Whisper (telephony)
 - TTS: Cartesia (web voice) / OpenAI TTS (telephony)
 - Telephony: Twilio (optional)
@@ -28,7 +30,8 @@ Backend server for the AI Sales Calling Agent. The agent conducts sales conversa
 ### Prerequisites
 
 - Node.js v18 or higher
-- OpenAI API key
+- Groq API key (for Llama agent)
+- OpenAI API key (for GPT-4o classification, fallback, and telephony)
 
 ### Installation
 
@@ -48,6 +51,7 @@ npm install
 
 3. Create `.env` file in `server/` directory:
 ```bash
+GROQ_API_KEY=your-groq-key-here
 OPENAI_API_KEY=sk-your-openai-key-here
 ASSEMBLYAI_API_KEY=your-assemblyai-key-here
 CARTESIA_API_KEY=your-cartesia-key-here
@@ -138,7 +142,8 @@ Note: Trial Twilio accounts require phone numbers to be verified in the Twilio C
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes | OpenAI API key |
+| `GROQ_API_KEY` | Yes | Groq API key (for Llama agent) |
+| `OPENAI_API_KEY` | Yes | OpenAI API key (for GPT-4o classification, fallback, and telephony) |
 | `ASSEMBLYAI_API_KEY` | Yes (web voice) | AssemblyAI API key |
 | `CARTESIA_API_KEY` | Yes (web voice) | Cartesia API key |
 | `TWILIO_ACCOUNT_SID` | Yes (telephony) | Twilio Account SID |
@@ -205,9 +210,9 @@ Uses LLM-based intent classification that understands context rather than keywor
 - Check server logs for connection errors
 
 **Problem: Agent not responding**
-- Verify API keys are set correctly
+- Verify API keys are set correctly (especially GROQ_API_KEY)
 - Check server logs for errors
-- Ensure OpenAI API has credits
+- Ensure Groq API has credits
 
 ### Telephony Issues
 
