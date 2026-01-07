@@ -33,24 +33,6 @@ This project consists of a full-stack application that enables AI-driven sales c
 - Phone number support for production deployments
 - Requires additional local configuration (ngrok, ffmpeg)
 
-## Architecture
-
-The application is split into two main components:
-
-- **Server** (`server/`): Node.js backend with Express and WebSocket support
-  - AI agent powered by LangChain and Llama 3.3 70B (via Groq)
-  - GPT-4o for intent classification, slot extraction, and fallback
-  - Voice processing pipeline (STT/TTS)
-  - Conversation state management
-  - Calendar service integration
-  - Telephony handlers for Twilio
-
-- **Client** (`client/`): React web application
-  - Voice conversation interface
-  - Real-time transcription display
-  - Company and lead configuration forms
-  - WebSocket communication with server
-
 ## How It Works
 
 1. **Configuration**: User configures company details and lead information through the web interface
