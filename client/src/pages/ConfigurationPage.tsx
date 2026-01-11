@@ -20,6 +20,7 @@ export default function ConfigurationPage() {
   });
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   const isConfigValid = (): boolean => {
     const nameValid = config.companyName.trim().length >= 2 && config.companyName.trim().length <= 100;
@@ -45,6 +46,14 @@ export default function ConfigurationPage() {
     }
   };
 
+  const handleNext = () => {
+    if (isConfigValid()) setCurrentStep(prev => prev + 1);
+  };
+  
+  const handleBack = () => {
+    setCurrentStep(prev => Math.max(0, prev - 1));
+  };
+
   return (
     <div className="configuration-page">
       <div className="page-container">
@@ -56,11 +65,16 @@ export default function ConfigurationPage() {
         </header>
 
         <div className="page-content">
-          <div className="config-forms">
-            <CompanyConfigForm config={config} onChange={setConfig} />
-            <LeadDetailsForm lead={lead} onChange={setLead} />
-          </div>
-
+        <div className="config-forms">
+            {currentStep === 0 && (
+              <CompanyConfigForm config={config} onChange={setConfig} />
+            )} 
+             {currentStep === 1 && (
+              <LeadDetailsForm lead={lead} onChange={setLead} />
+            )} 
+             
+        </div>
+          { currentStep === 2 && (
           <div className="test-panel">
             <h2 className="test-panel-title">Test Your Agent</h2>
             <p className="test-panel-description">
@@ -96,7 +110,26 @@ export default function ConfigurationPage() {
               </div>
             </div>
           </div>
+        )}
         </div>
+         <div className="step-navigation">
+              <button 
+                onClick={handleBack} 
+                disabled={currentStep === 0}
+                className="nav-button"
+              >
+                ← Back
+              </button>
+              {currentStep === 0 || currentStep === 1 ? (
+                <button 
+                  onClick={handleNext} 
+                  disabled={currentStep === 0 && !isConfigValid() || currentStep === 1 && !isLeadValid()}
+                  className="nav-button"
+                >
+                  Next →
+                </button>
+              ) : null}
+            </div>
       </div>
 
       <VoiceTestDialog
