@@ -218,11 +218,11 @@ export async function bookMeeting(
         description,
         start: {
           dateTime: startDate.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          timeZone: "Asia/Jerusalem",
         },
         end: {
           dateTime: endDate.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          timeZone: "Asia/Jerusalem",
         },
         attendees: attendees.map((email) => ({ email })),
         conferenceData: {
