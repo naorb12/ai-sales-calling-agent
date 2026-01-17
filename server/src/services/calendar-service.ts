@@ -82,8 +82,7 @@ function getCalendarClient() {
  * Queries Google Calendar free/busy API to find available times
  */
 export async function getAvailableSlots(
-  daysAhead: number = 7,
-  slotsCount: number = 3
+  daysAhead: number = 30,
 ): Promise<TimeSlot[]> {
   const calendarClient = getCalendarClient();
   
@@ -119,21 +118,19 @@ export async function getAvailableSlots(
     // Generate potential slots and filter out busy times
     let dayOffset = 1; // Start from tomorrow
 
-    while (slots.length < slotsCount && dayOffset <= daysAhead) {
+    while (dayOffset <= daysAhead) {
       const date = new Date(now);
       date.setDate(date.getDate() + dayOffset);
       const dayOfWeek = date.getDay();
       
       // Skip Saturday
-      if (dayOfWeek === 6) {
+      if (dayOfWeek === 5 ||dayOfWeek === 6) {
         dayOffset++;
         continue;
       }
 
       // Check each business hour
       for (const time of businessHours) {
-        if (slots.length >= slotsCount) break;
-
         const [hours, minutes] = time.split(":").map(Number);
         const slotStart = new Date(date);
         slotStart.setHours(hours ?? 0, minutes ?? 0, 0, 0);

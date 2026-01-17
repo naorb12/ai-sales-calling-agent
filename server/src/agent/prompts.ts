@@ -129,30 +129,37 @@ The customer said now: "{userInput}"
 {availableSlots}
 
 **What to do**:
-1. Ask the customer what works for them - morning or afternoon? Specific days?
-2. Suggest 2-3 options from the availability above that match their preferences
-3. When they choose a time - confirm the choice clearly
-4. Explain they'll receive a confirmation email with a meeting link
+1. Ask what timing works - morning or afternoon? This week or next?
+2. Suggest 2-3 options from the list that match their preference
+3. When suggesting times:
+   - THIS WEEK (next 1-3 days): Use natural language - "tomorrow", "Wednesday"
+   - NEXT WEEK & LATER: Be specific with dates - "Wednesday the 22nd", "Tuesday the 28th"
+4. When CONFIRMING the booking: ALWAYS specify the full date clearly
+5. Explain they'll receive an email confirmation
 
 **Examples**:
 
-If the customer doesn't specify a preference:
-"Great! We have availability this week. What works better for you - morning or afternoon? Are there specific days that work better?"
+If customer doesn't specify (offering this week):
+"Great! I have tomorrow at 10am, tomorrow at 2pm, or Wednesday at 10am. What works for you?"
 
-After the customer states a preference (e.g., "afternoon on Tuesday or Wednesday"):
-"Sure! I have these options:
-- Tuesday (12/17) at 2:00 PM
-- Tuesday (12/17) at 4:00 PM
-- Wednesday (12/18) at 2:00 PM
-What works best for you?"
+If customer asks for "next week" (be specific):
+"Perfect! I have Tuesday the 21st at 2pm, Wednesday the 22nd at 2pm, or Thursday the 23rd at 4pm. Which works?"
 
-After the customer chooses:
-"Perfect! I've scheduled you for Tuesday at 2:00 PM. You'll receive an email with confirmation and the Google Meet link. Looking forward to seeing you!"
+If customer asks for "later" (be specific):
+"Sure! I have Monday the 27th at 10am, Tuesday the 28th at 2pm, or Wednesday the 29th at 4pm. Which one?"
 
-**Important**: 
-- Don't use the check_calendar tool - availability is already listed above!
-- Don't make up times - only what's listed in availability
-- At the end, clearly state the chosen time in format: "Day X on date Y at time Z"`,
+After customer chooses "tomorrow at 2":
+"Excellent! I've scheduled you for tomorrow, Tuesday the 21st at 2pm. You'll get an email confirmation!"
+
+After customer chooses from next week options:
+"Perfect! You're all set for Wednesday, January 22nd at 2pm. You'll receive a confirmation email!"
+
+**Key rules**:
+- THIS WEEK = natural ("tomorrow", "Wednesday")
+- NEXT WEEK+ = specific dates ("Wednesday the 22nd", "January 22nd")
+- CONFIRMATIONS = always include the specific date for clarity
+- Keep it conversational and friendly
+- Don't use the check_calendar tool - slots are already listed!`,
     ],
     [
       "human",
@@ -177,7 +184,8 @@ Suggest times from the list above. Ask about preferences, suggest options, confi
 
 **What to do**:
 - Thank {leadName} for their time
-- Briefly summarize (if a meeting was scheduled - confirm the **exact** time, if not - leave the door open)
+- If meeting scheduled: Confirm with FULL DATE (e.g., "See you Tuesday, January 21st at 2pm")
+- If no meeting: Leave the door open politely
 - End on a positive tone
 
 **Examples**:

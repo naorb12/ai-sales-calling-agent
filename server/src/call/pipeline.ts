@@ -35,7 +35,11 @@ export async function processTurn(session: CallSession, userInput: string): Prom
   // Step 1.5: Extract slot BEFORE transition if in BOOK_MEETING
   // This ensures we have the latest selection when making stage decisions
   if (session.stage === CallStage.BOOK_MEETING) {
-    const selectedSlot = await extractSelectedSlot("", userInput, session.availableSlots);
+    const lastAgentResponse = session.history.length > 0 
+            ? session.history[session.history.length - 1]?.agent || ""
+            : "";
+
+    const selectedSlot = await extractSelectedSlot(lastAgentResponse, userInput, session.availableSlots);
     if (selectedSlot) {
       session.selectedSlot = selectedSlot;
       console.log(`\n✅ Selected slot: ${selectedSlot.displayText}`);
