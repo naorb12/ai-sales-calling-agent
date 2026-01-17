@@ -88,7 +88,7 @@ export async function getAvailableSlots(
   const calendarClient = getCalendarClient();
   
   // Use primary calendar by default with OAuth, or configured calendar ID
-  const calendarId = config.google.calendarId || "primary";
+  const calendarId = "primary";
   
   const slots: TimeSlot[] = [];
   const now = new Date();
@@ -192,16 +192,14 @@ export async function bookMeeting(
   const calendarClient = getCalendarClient();
   
   // Use primary calendar by default with OAuth, or configured calendar ID
-  const calendarId = config.google.calendarId || "primary";
+  const calendarId = "primary";
 
   try {
     // Parse slot date and time
     const [hours, minutes] = slot.time.split(":").map(Number);
-    const startDate = new Date(slot.date);
-    startDate.setHours(hours ?? 0, minutes ?? 0, 0, 0);
-
-    const endDate = new Date(startDate);
-    endDate.setHours(startDate.getHours() + 1); // 1-hour meeting
+    const startDateTime = `${slot.date}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    const endHours = (hours ?? 0) + 1;
+    const endDateTime = `${slot.date}T${String(endHours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 
     // Create calendar event
     const companyName = companyConfig?.companyName || "Company";
@@ -217,11 +215,11 @@ export async function bookMeeting(
         summary,
         description,
         start: {
-          dateTime: startDate.toISOString(),
+          dateTime: startDateTime,
           timeZone: "Asia/Jerusalem",
         },
         end: {
-          dateTime: endDate.toISOString(),
+          dateTime: endDateTime,
           timeZone: "Asia/Jerusalem",
         },
         attendees: attendees.map((email) => ({ email })),
